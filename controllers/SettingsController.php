@@ -5,6 +5,16 @@
 
 class SettingsController extends Controller
 {
+    /**
+     * Перевірка чи користувач є адміністратором
+     */
+    private function isAdmin(): bool
+    {
+        // Перевіряємо групи Nextcloud
+        $ncGroups = $_SESSION['nc_groups'] ?? [];
+        return in_array('admin', $ncGroups, true);
+    }
+
     public function dates(): void
     {
         if ($this->isPost()) {
@@ -112,8 +122,19 @@ class SettingsController extends Controller
         exit;
     }
 
+    /**
+     * Сторінка налаштувань "тупого складу" (заправка)
+     * Доступна тільки адміністраторам
+     */
     public function simple(): void
     {
+        // Перевірка прав доступу
+        if (!$this->isAdmin()) {
+            $this->flash('error', 'Доступ заборонено. Тільки для адміністраторів.');
+            $this->redirect('/');
+            return;
+        }
+
         $config = new ConfigModel($this->db);
         $warehouseModel = new WarehouseModel($this->db);
         $materialModel = new MaterialModel($this->db);
@@ -134,8 +155,17 @@ class SettingsController extends Controller
         ]);
     }
 
+    /**
+     * Зберегти налаштування "тупого складу"
+     */
     public function simplesave(): void
     {
+        // Перевірка прав доступу
+        if (!$this->isAdmin()) {
+            $this->jsonResponse(['success' => false, 'error' => 'Доступ заборонено']);
+            return;
+        }
+
         if (!$this->isPost()) {
             $this->redirect('/settings/simple');
             return;
@@ -155,5 +185,35 @@ class SettingsController extends Controller
 
         $this->flash('success', 'Налаштування заправки збережено');
         $this->redirect('/settings/simple');
+    }
+
+    /**
+     * Отримати список складів та матеріалів (AJAX)
+     */
+    public function simpledata(): void
+    {
+        if (!$this->isAdmin()) {
+            $this->jsonResponse(['success' => false, 'error' => 'Доступ заборонено']);
+            return;
+        }
+
+        $warehouseModel = new WarehouseModel($this->db);
+        $materialModel = new MaterialModel($this->db);
+        $config = new ConfigModel($this->db);
+
+        $this->jsonResponse([
+            'success' => true,
+            'warehouses' => $warehouseModel->getAll('name ASC'),
+            'materials' => $materialModel->getAll('name ASC'),
+            'currentWarehouse' => $config->getSimpleWarehouse(),
+            'currentMaterials' => $config->getSimpleMaterials(),
+        ]);
+    }
+
+    private function jsonResponse(array $data): void
+    {
+        header('Content-Type: application/json');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        exit;
     }
 }

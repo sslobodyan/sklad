@@ -76,6 +76,7 @@
     <script>
         window.basePath = <?= json_encode($basePath) ?>;
         window.flashMessages = <?= json_encode($flashMessages ?? []) ?>;
+        window.isAdmin = <?= json_encode(in_array('admin', $_SESSION['nc_groups'] ?? [])) ?>;
         
         window.applyDateRange = function() {
             var dateFrom = document.getElementById('dateFrom').value;
@@ -171,6 +172,7 @@
                             <span>Звіт по матеріалу</span>
                         </a>
                     </div>
+                    <?php if (in_array('admin', $_SESSION['nc_groups'] ?? [])): ?>
                     <div class="nav-group">
                         <div class="nav-group-label">Система</div>
                         <a href="<?= $basePath ?>/settings/simple" class="nav-item <?= $activePage === 'settings-simple' ? 'active' : '' ?>">
@@ -180,6 +182,7 @@
                             <span>Заправка</span>
                         </a>
                     </div>
+                    <?php endif; ?>
                 </nav>
             </aside>
 
