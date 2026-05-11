@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>sklad</id>
+    <name>Складський облік</name>
+    <summary>Облік руху матеріалів на складах</summary>
+    <description>Кількісний облік руху матеріалів з автоматичним розрахунком списання за витратою ресурсів</description>
+    <version>1.0.0</version>
+    <licence>MIT</licence>
+    <author>Serhii Slobodian</author>
+    <namespace>Sklad</namespace>
+    <category>organization</category>
+    <bugs>https://github.com/example/sklad/issues</bugs>
+    <dependencies>
+        <nextcloud min-version="25" max-version="35"/>
+    </dependencies>
+    <navigations>
+        <navigation>
+            <name>Склад</name>
+            <route>sklad.page.index</route>
+            <icon>app.svg</icon>
+            <order>20</order>
+        </navigation>
+    </navigations>
+    <settings>
+        <admin>OCA\Sklad\Settings\AdminSettings</admin>
+    </settings>
+</info>
