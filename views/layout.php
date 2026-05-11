@@ -45,15 +45,65 @@
             cursor: pointer; padding: 4px; font-size: 18px; opacity: 0.8;
         }
         .flash-message .flash-close:hover { opacity: 1; }
+        
+        .dp-presets {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .dp-presets a {
+            padding: 8px 4px;
+            font-size: 11px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .dp-presets a:hover {
+            background: var(--blue-light);
+            border-color: var(--blue);
+            color: var(--blue);
+        }
     </style>
 </head>
 <body>
     <div class="flash-container" id="flashContainer"></div>
     
     <script>
-        // Глобальні змінні для app.js
         window.basePath = <?= json_encode($basePath) ?>;
         window.flashMessages = <?= json_encode($flashMessages ?? []) ?>;
+        
+        window.applyDateRange = function() {
+            var dateFrom = document.getElementById('dateFrom').value;
+            var dateTo = document.getElementById('dateTo').value;
+            
+            if (!dateFrom || !dateTo) {
+                alert('Оберіть обидві дати');
+                return;
+            }
+            
+            fetch(window.basePath + '/settings/dates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo)
+            })
+            .then(function() {
+                closeDatePanel();
+                location.reload();
+            })
+            .catch(function() {
+                alert('Помилка збереження');
+            });
+        };
+        
+        function closeDatePanel() {
+            var panel = document.getElementById('datePanel');
+            if (panel) panel.classList.remove('open');
+        }
     </script>
     
     <div class="app">
@@ -140,7 +190,7 @@
     </div>
 
     <div class="date-panel" id="datePanel">
-        <div class="date-panel-overlay" onclick="toggleDatePanel()"></div>
+        <div class="date-panel-overlay" onclick="closeDatePanel()"></div>
         <div class="date-panel-content" id="datePanelContent">
             <div class="dp-section">
                 <div class="dp-label">Період для звітів</div>
@@ -157,6 +207,7 @@
                 <div class="dp-presets">
                     <a href="<?= $basePath ?>/settings/preset/current-month">Поточний місяць</a>
                     <a href="<?= $basePath ?>/settings/preset/last-month">Минулий місяць</a>
+                    <a href="<?= $basePath ?>/settings/preset/today">Сьогодні</a>
                     <a href="<?= $basePath ?>/settings/preset/current-year">Поточний рік</a>
                 </div>
                 <button class="dp-btn" onclick="applyDateRange()">Застосувати</button>
@@ -191,7 +242,6 @@
 
     <script src="<?= $basePath ?>/assets/js/app.js"></script>
     <script>
-        // Показ flash-повідомлень
         (function() {
             var container = document.getElementById('flashContainer');
             var messages = window.flashMessages || [];

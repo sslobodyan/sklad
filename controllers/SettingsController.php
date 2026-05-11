@@ -1,7 +1,6 @@
 <?php
 /**
  * Контролер налаштувань (глобальний діапазон дат)
- * Зберігає дати в cookie (365 днів) — працює в iframe Nextcloud
  */
 
 class SettingsController extends Controller
@@ -14,7 +13,6 @@ class SettingsController extends Controller
             
             if ($dateFrom && $dateTo) {
                 self::saveDateRange($dateFrom, $dateTo);
-                $this->flash('success', 'Період оновлено');
             }
             
             $referer = $_SERVER['HTTP_REFERER'] ?? BASE_PATH . '/';
@@ -27,20 +25,26 @@ class SettingsController extends Controller
 
     public function preset($type): void
     {
-        $now = new DateTime();
+        $dateFrom = '';
+        $dateTo = '';
         
         switch ($type) {
             case 'current-month':
-                $dateFrom = $now->modify('first day of this month')->format('Y-m-d');
-                $dateTo = $now->modify('last day of this month')->format('Y-m-d');
+                $dateFrom = date('Y-m-01');
+                $dateTo = date('Y-m-t');
                 break;
             case 'last-month':
-                $dateFrom = $now->modify('first day of last month')->format('Y-m-d');
-                $dateTo = (new DateTime())->modify('last day of last month')->format('Y-m-d');
+                $dateFrom = date('Y-m-01', strtotime('-1 month'));
+                $dateTo = date('Y-m-t', strtotime('-1 month'));
+                break;
+            case 'today':
+                $dateFrom = date('Y-m-d');
+                $dateTo = date('Y-m-d');
                 break;
             case 'current-year':
-                $dateFrom = $now->format('Y') . '-01-01';
-                $dateTo = (new DateTime())->format('Y-m-d');
+                $year = date('Y');
+                $dateFrom = $year . '-01-01';
+                $dateTo = $year . '-12-31';
                 break;
             default:
                 $this->redirect('/');
@@ -54,9 +58,6 @@ class SettingsController extends Controller
         exit;
     }
 
-    /**
-     * Зберегти діапазон у cookie (365 днів)
-     */
     public static function saveDateRange(string $from, string $to): void
     {
         $expire = time() + 365 * 86400;
@@ -78,14 +79,10 @@ class SettingsController extends Controller
             'samesite' => 'None',
         ]);
         
-        // Також в сесію для поточного запиту
         $_SESSION['date_from'] = $from;
         $_SESSION['date_to'] = $to;
     }
 
-    /**
-     * Отримати поточний діапазон (cookie → session → default)
-     */
     public static function getDateFrom(): string
     {
         return $_COOKIE['sklad_date_from'] ?? $_SESSION['date_from'] ?? date('Y-m-01');
@@ -96,9 +93,6 @@ class SettingsController extends Controller
         return $_COOKIE['sklad_date_to'] ?? $_SESSION['date_to'] ?? date('Y-m-d');
     }
 
-    /**
-     * Зберегти дату закритого періоду
-     */
     public function closeperiod(): void
     {
         if ($this->isPost()) {
@@ -118,9 +112,6 @@ class SettingsController extends Controller
         exit;
     }
 
-    /**
-     * Сторінка налаштувань "тупого складу" (заправка)
-     */
     public function simple(): void
     {
         $config = new ConfigModel($this->db);
@@ -143,9 +134,6 @@ class SettingsController extends Controller
         ]);
     }
 
-    /**
-     * Зберегти налаштування "тупого складу"
-     */
     public function simplesave(): void
     {
         if (!$this->isPost()) {
