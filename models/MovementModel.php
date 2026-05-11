@@ -55,6 +55,7 @@ class MovementModel extends Model
 
     public function update(int $id, array $data): void
     {
+        $this->setCurrentUser();
         $this->db->query(
             "UPDATE movements SET 
                 movement_date = ?, 

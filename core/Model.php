@@ -1,19 +1,30 @@
 <?php
 /**
- * Базова модель
+ * Базова модель з підтримкою аудиту
  */
 
 abstract class Model
 {
     protected Database $db;
     protected string $table;
+    
     public function __construct(Database $db)
     {
         $this->db = $db;
     }
 
     /**
-     * Поточний автор зміни: "2026.21.01, Сергій Слободян"
+     * Встановлює поточного користувача для аудиту в тригерах
+     * Викликати перед UPDATE/DELETE операціями
+     */
+    public function setCurrentUser(): void
+    {
+        $username = $this->authorStamp();
+        $this->db->query("SET @current_user = ?", [$username]);
+    }
+
+    /**
+     * Поточний автор зміни: "2026.05.11, Сергій Слободян" або "2026.05.11, ip 192.168.1.1"
      */
     protected function authorStamp(): string
     {
@@ -27,7 +38,8 @@ abstract class Model
         } elseif (!empty($_SESSION['nc_user'])) {
             $name = $_SESSION['nc_user'];
         } else {
-            $name = 'ip '.$_SERVER['REMOTE_ADDR'];
+            // Юзер не визначений — пишемо IP
+            $name = 'ip ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
         }
         return date('Y.m.d') . ', ' . $name;
     }
@@ -56,11 +68,12 @@ abstract class Model
     }
 
     /**
-     * Видалити запис
+     * Видалити запис (з автоматичним аудитом)
      */
     public function delete(int $id): bool
     {
         try {
+            $this->setCurrentUser();
             $this->db->query(
                 "DELETE FROM {$this->table} WHERE id = ?",
                 [$id]
@@ -79,5 +92,22 @@ abstract class Model
         return (int) $this->db->query(
             "SELECT COUNT(*) as cnt FROM {$this->table}"
         )->fetch()['cnt'];
+    }
+
+    /**
+     * Отримати історію змін для запису
+     */
+    public function getHistory(int $id): array
+    {
+        $historyTable = $this->table . '_history';
+        
+        try {
+            return $this->db->query(
+                "SELECT * FROM {$historyTable} WHERE id = ? ORDER BY changed_at DESC",
+                [$id]
+            )->fetchAll();
+        } catch (PDOException $e) {
+            return [];
+        }
     }
 }

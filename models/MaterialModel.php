@@ -18,6 +18,7 @@ class MaterialModel extends Model
 
     public function update(int $id, string $name): void
     {
+        $this->setCurrentUser();
         $this->db->query(
             "UPDATE materials SET name = ?, author = ? WHERE id = ?",
             [trim($name), $this->authorStamp(), $id]

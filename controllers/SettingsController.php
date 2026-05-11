@@ -117,4 +117,55 @@ class SettingsController extends Controller
         header('Location: ' . $referer);
         exit;
     }
+
+    /**
+     * Сторінка налаштувань "тупого складу" (заправка)
+     */
+    public function simple(): void
+    {
+        $config = new ConfigModel($this->db);
+        $warehouseModel = new WarehouseModel($this->db);
+        $materialModel = new MaterialModel($this->db);
+
+        $warehouses = $warehouseModel->getAll('name ASC');
+        $materials = $materialModel->getAll('name ASC');
+        
+        $currentWarehouse = $config->getSimpleWarehouse();
+        $currentMaterials = $config->getSimpleMaterials();
+
+        $this->render('settings/simple', [
+            'title' => 'Налаштування заправки',
+            'activePage' => 'settings-simple',
+            'warehouses' => $warehouses,
+            'materials' => $materials,
+            'currentWarehouse' => $currentWarehouse,
+            'currentMaterials' => $currentMaterials,
+        ]);
+    }
+
+    /**
+     * Зберегти налаштування "тупого складу"
+     */
+    public function simplesave(): void
+    {
+        if (!$this->isPost()) {
+            $this->redirect('/settings/simple');
+            return;
+        }
+
+        $config = new ConfigModel($this->db);
+        
+        $warehouseId = (int)$this->post('simple_warehouse') ?: null;
+        $materialIds = $this->post('simple_materials') ?: [];
+        
+        if (!is_array($materialIds)) {
+            $materialIds = [];
+        }
+        
+        $config->setSimpleWarehouse($warehouseId);
+        $config->setSimpleMaterials($materialIds);
+
+        $this->flash('success', 'Налаштування заправки збережено');
+        $this->redirect('/settings/simple');
+    }
 }

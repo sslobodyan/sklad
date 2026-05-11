@@ -25,8 +25,10 @@ class ConfigModel extends Model
     public function setValue(string $key, ?string $value): void
     {
         if ($value === null || $value === '') {
+            $this->setCurrentUser();
             $this->db->query("DELETE FROM config WHERE `key` = ?", [$key]);
         } else {
+            $this->setCurrentUser();
             $this->db->query(
                 "INSERT INTO config (`key`, `value`, `author`) VALUES (?, ?, ?)
                  ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `author` = VALUES(`author`)",
@@ -59,5 +61,46 @@ class ConfigModel extends Model
         $closed = $this->getClosedDate();
         if (!$closed) return false;
         return $date <= $closed;
+    }
+
+    /**
+     * Отримати ID "тупого складу" для спрощеної сторінки
+     */
+    public function getSimpleWarehouse(): ?int
+    {
+        $value = $this->getValue('simple_warehouse');
+        return $value ? (int)$value : null;
+    }
+
+    /**
+     * Встановити "тупий склад"
+     */
+    public function setSimpleWarehouse(?int $warehouseId): void
+    {
+        $this->setValue('simple_warehouse', $warehouseId ? (string)$warehouseId : null);
+    }
+
+    /**
+     * Отримати масив дозволених матеріалів для "тупого складу"
+     */
+    public function getSimpleMaterials(): array
+    {
+        $value = $this->getValue('simple_materials');
+        if (!$value) return [];
+        
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? array_map('intval', $decoded) : [];
+    }
+
+    /**
+     * Встановити дозволені матеріали для "тупого складу"
+     */
+    public function setSimpleMaterials(array $materialIds): void
+    {
+        if (empty($materialIds)) {
+            $this->setValue('simple_materials', null);
+        } else {
+            $this->setValue('simple_materials', json_encode(array_values(array_map('intval', $materialIds))));
+        }
     }
 }

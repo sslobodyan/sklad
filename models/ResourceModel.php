@@ -33,12 +33,14 @@ class ResourceModel extends Model
 
     public function updateType(int $id, string $name, string $unit, string $format = 'int'): void
     {
+        $this->setCurrentUser();
         $this->db->query("UPDATE resource_types SET name = ?, unit = ?, format = ?, author = ? WHERE id = ?", [trim($name), trim($unit), $format, $this->authorStamp(), $id]);
     }
 
     public function deleteType(int $id): bool
     {
         try {
+            $this->setCurrentUser();
             $this->db->query("DELETE FROM resource_types WHERE id = ?", [$id]);
             return true;
         } catch (\PDOException $e) {
@@ -78,6 +80,7 @@ class ResourceModel extends Model
 
     public function removeWarehouseResource(int $warehouseId, int $resourceTypeId): void
     {
+        $this->setCurrentUser();
         $this->db->query(
             "DELETE FROM warehouse_resources WHERE warehouse_id = ? AND resource_type_id = ?",
             [$warehouseId, $resourceTypeId]
@@ -119,6 +122,7 @@ class ResourceModel extends Model
 
     public function saveRate(int $warehouseId, int $resourceTypeId, int $materialId, float $rate, ?int $sourceWarehouseId, bool $spreadByDay = false): void
     {
+        $this->setCurrentUser();
         $this->db->query(
             "INSERT INTO resource_rates (warehouse_id, resource_type_id, material_id, rate, source_warehouse_id, spread_by_day, author)
              VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -129,6 +133,7 @@ class ResourceModel extends Model
 
     public function deleteRate(int $id): void
     {
+        $this->setCurrentUser();
         $this->db->query("DELETE FROM resource_rates WHERE id = ?", [$id]);
     }
 
@@ -456,6 +461,7 @@ class ResourceModel extends Model
      */
     public function updateReading(int $logId, string $date, float $reading, string $note, float $correctionPct, MovementModel $movementModel): array
     {
+        $this->setCurrentUser();
         $log = $this->getLogById($logId);
         if (!$log) {
             return ['success' => false, 'error' => 'Запис не знайдено'];

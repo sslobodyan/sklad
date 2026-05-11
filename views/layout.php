@@ -74,6 +74,19 @@
                             <span>Звіт по матеріалу</span>
                         </a>
                     </div>
+
+<div class="nav-group">
+    <div class="nav-group-label">Система</div>
+    <a href="<?= BASE_PATH ?>/settings/simple" class="nav-item <?= $activePage === 'settings-simple' ? 'active' : '' ?>">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+        </svg>
+        Заправка
+    </a>
+</div>
+
+    
                 </nav>
             </aside>
 

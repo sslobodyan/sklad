@@ -1,6 +1,8 @@
 <?php
 /**
  * Контролер руху матеріалів
+ * 
+ * ЗМІНА: delete() тепер зберігає фільтри (redirect назад на referer)
  */
 
 class MovementsController extends Controller
@@ -26,6 +28,7 @@ class MovementsController extends Controller
             'warehouse_id' => $this->get('warehouse_id'),
             'material_id' => $this->get('material_id'),
         ];
+
         // При першому відкритті таблиці Рух — беремо дати з головного діапазону.
         // Якщо є highlight, дати не нав'язуємо, щоб точно показати потрібний запис.
         if (!$highlightId) {
@@ -38,7 +41,6 @@ class MovementsController extends Controller
         }
 
         // Сортування
-
         $allowedSort = [
             'date' => 'm.movement_date',
             'from' => 'wf.name',
@@ -49,14 +51,12 @@ class MovementsController extends Controller
         ];
         $sortKey = $this->get('sort', 'date');
         $sortDir = strtolower($this->get('order', 'desc')) === 'asc' ? 'asc' : 'desc';
-
         if (!isset($allowedSort[$sortKey])) {
             $sortKey = 'date';
         }
         $orderBy = $allowedSort[$sortKey] . ' ' . $sortDir . ', m.id ' . $sortDir;
 
         $movements = $this->model->getAllWithNames($filters, $orderBy);
-        //$highlightId = $this->get('highlight');
 
         $this->render('movements/index', [
             'title' => 'Рух матеріалів',
@@ -117,7 +117,6 @@ class MovementsController extends Controller
                 $id = $this->model->create($data);
                 $message = 'Рух додано';
             }
-            
             $this->respondWith(true, $message, ['id' => $id]);
         } catch (Exception $e) {
             $this->respondWith(false, 'Помилка збереження: ' . $e->getMessage());
@@ -127,23 +126,36 @@ class MovementsController extends Controller
     public function delete($id): void
     {
         $existing = $this->model->getById((int)$id);
-
         if ($existing && !empty($existing['resource_log_id'])) {
             $this->flash('error', 'Автоматичний запис — видаліть через Витрату ресурсів');
-            $this->redirect('movements');
+            $this->redirectBack();
             return;
         }
 
         $config = new ConfigModel($this->db);
         if ($existing && $config->isDateClosed($existing['movement_date'])) {
             $this->flash('error', 'Цей запис знаходиться в закритому періоді і не може бути видалений');
-            $this->redirect('movements');
+            $this->redirectBack();
             return;
         }
 
         $this->model->delete((int)$id);
         $this->flash('success', 'Запис видалено');
-        $this->redirect('movements');
+        $this->redirectBack();
+    }
+
+    /**
+     * Редірект назад на сторінку з якої прийшли (зберігає фільтри)
+     */
+    private function redirectBack(): void
+    {
+        $referer = $_SERVER['HTTP_REFERER'] ?? null;
+        if ($referer) {
+            header('Location: ' . $referer);
+        } else {
+            $this->redirect('movements');
+        }
+        exit;
     }
 
     /**
@@ -157,7 +169,6 @@ class MovementsController extends Controller
             'warehouse_id' => $this->get('warehouse_id'),
             'material_id' => $this->get('material_id'),
         ];
-
         $movements = $this->model->getAllWithNames($filters);
 
         // Формуємо ім'я файлу
@@ -188,7 +199,6 @@ class MovementsController extends Controller
         }
 
         $file = $_FILES['file'];
-
         if ($file['error'] !== UPLOAD_ERR_OK) {
             $this->flash('error', 'Помилка завантаження файлу');
             $this->redirect('movements');
@@ -221,7 +231,6 @@ class MovementsController extends Controller
         $closedDate = $config->getClosedDate();
 
         // Галочка "Видалити поточні дані"
-        // Видаляємо ТІЛЬКИ ручні рухи, автоматичні (resource_log_id IS NOT NULL) залишаємо
         $clearExisting = !empty($this->post('clear_existing'));
         if ($clearExisting) {
             if ($closedDate) {
@@ -244,17 +253,18 @@ class MovementsController extends Controller
             $row = $rows[$i];
             $rowNum = $i + 1;
 
+            // Мінімальні 5 колонок: Дата, Звідки, Куди, Матеріал, Кількість
             if (count($row) < 5) {
-                $errors[] = "Рядок {$rowNum}: недостатньо колонок";
+                $errors[] = "Рядок {$rowNum}: мало колонок";
                 continue;
             }
 
-            $dateRaw = trim($row[0] ?? '');
-            $fromRaw = trim($row[1] ?? '');
-            $toRaw   = trim($row[2] ?? '');
-            $matRaw  = trim($row[3] ?? '');
-            $qtyRaw  = trim($row[4] ?? '');
-            $noteRaw = trim($row[5] ?? '');
+            $dateRaw = trim($row[0]);
+            $fromRaw = trim($row[1]);
+            $toRaw   = trim($row[2]);
+            $matRaw  = trim($row[3]);
+            $qtyRaw  = trim($row[4]);
+            $noteRaw = trim($row[8] ?? $row[5] ?? '');
 
             // Дата
             $date = $this->parseDate($dateRaw);
@@ -271,7 +281,7 @@ class MovementsController extends Controller
 
             // Матеріал — знайти або створити
             if ($matRaw === '') {
-                $errors[] = "Рядок {$rowNum}: не вказано матеріал";
+                $errors[] = "Рядок {$rowNum}: порожній матеріал";
                 continue;
             }
             $materialId = $this->materialModel->findOrCreate($matRaw);
@@ -282,7 +292,7 @@ class MovementsController extends Controller
             // Кількість
             $quantity = (float)str_replace([',', ' '], ['.', ''], $qtyRaw);
             if ($quantity <= 0) {
-                $errors[] = "Рядок {$rowNum}: невірна кількість «{$qtyRaw}»";
+                $errors[] = "Рядок {$rowNum}: кількість <= 0";
                 continue;
             }
 
@@ -355,9 +365,6 @@ class MovementsController extends Controller
         $this->redirect('movements');
     }
 
-    /**
-     * Перевірка чи склад вже існував (для повідомлення про створення нових)
-     */
     private $_existingWarehouses = null;
     private function warehouseExistedBefore(string $name): bool
     {
@@ -384,9 +391,6 @@ class MovementsController extends Controller
         return isset($this->_existingMaterials[mb_strtolower(trim($name))]);
     }
 
-    /**
-     * Парсинг дати з різних форматів
-     */
     private function parseDate(string $raw): ?string
     {
         $raw = trim($raw);
@@ -404,112 +408,23 @@ class MovementsController extends Controller
         if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $raw, $m)) {
             return sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
         }
-        // Excel serial date number (days since 1900-01-01)
-        if (is_numeric($raw) && (int)$raw > 40000 && (int)$raw < 55000) {
+        // Excel serial date
+        if (is_numeric($raw) && (int)$raw > 40000 && (int)$raw < 60000) {
             $unix = ((int)$raw - 25569) * 86400;
             return date('Y-m-d', $unix);
         }
-
         return null;
     }
 
     /**
-     * Парсинг xlsx файлу — повертає масив рядків
+     * AJAX: отримати дані руху для редагування
      */
-    private function parseXlsx(string $filepath): array
+    public function getone($id = null): void
     {
-        $zip = new ZipArchive();
-        if ($zip->open($filepath) !== true) {
-            throw new Exception('Не вдалося відкрити файл як ZIP');
+        if (!$id) {
+            $this->json(['success' => false, 'error' => 'ID не вказано']);
+            return;
         }
-
-        // Читаємо shared strings (якщо є)
-        $sharedStrings = [];
-        $ssXml = $zip->getFromName('xl/sharedStrings.xml');
-        if ($ssXml) {
-            $ss = new SimpleXMLElement($ssXml);
-            foreach ($ss->si as $si) {
-                // Текст може бути в <t> або в кількох <r><t>
-                $text = '';
-                if (isset($si->t)) {
-                    $text = (string)$si->t;
-                } elseif (isset($si->r)) {
-                    foreach ($si->r as $run) {
-                        $text .= (string)$run->t;
-                    }
-                }
-                $sharedStrings[] = $text;
-            }
-        }
-
-        // Читаємо sheet1
-        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
-        if (!$sheetXml) {
-            $zip->close();
-            throw new Exception('Не знайдено лист sheet1 у файлі');
-        }
-
-        $sheet = new SimpleXMLElement($sheetXml);
-        $zip->close();
-
-        $rows = [];
-        foreach ($sheet->sheetData->row as $rowEl) {
-            $rowData = [];
-            $maxCol = 0;
-
-            foreach ($rowEl->c as $cell) {
-                $ref = (string)$cell['r']; // Наприклад "B3"
-                $colIndex = $this->colToIndex($ref);
-                $maxCol = max($maxCol, $colIndex);
-
-                $value = '';
-                $type = (string)$cell['t'];
-
-                if ($type === 's') {
-                    // Shared string
-                    $idx = (int)$cell->v;
-                    $value = $sharedStrings[$idx] ?? '';
-                } elseif ($type === 'inlineStr') {
-                    // Inline string
-                    $value = (string)$cell->is->t;
-                } else {
-                    // Number або інше
-                    $value = (string)$cell->v;
-                }
-
-                // Заповнюємо пропущені колонки
-                while (count($rowData) < $colIndex) {
-                    $rowData[] = '';
-                }
-                $rowData[$colIndex] = $value;
-            }
-
-            $rows[] = $rowData;
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Конвертація посилання на клітинку ("B3") у індекс колонки (1)
-     */
-    private function colToIndex(string $cellRef): int
-    {
-        preg_match('/^([A-Z]+)/', $cellRef, $m);
-        $letters = $m[1];
-        $index = 0;
-        $len = strlen($letters);
-        for ($i = 0; $i < $len; $i++) {
-            $index = $index * 26 + (ord($letters[$i]) - 64);
-        }
-        return $index - 1; // 0-based
-    }
-
-    /**
-     * API: отримання даних одного руху
-     */
-    public function load($id): void
-    {
         $movement = $this->model->getById((int)$id);
         if (!$movement) {
             $this->json(['success' => false, 'error' => 'Не знайдено']);
@@ -538,9 +453,13 @@ class MovementsController extends Controller
     {
         if (empty($data['movement_date'])) return 'Вкажіть дату';
         if (empty($data['material_id'])) return 'Оберіть матеріал';
-        if ($data['quantity'] <= 0) return 'Вкажіть кількість';
-        if (empty($data['warehouse_from_id']) && empty($data['warehouse_to_id'])) return 'Вкажіть хоча б один склад';
-        if ($data['warehouse_from_id'] && $data['warehouse_from_id'] === $data['warehouse_to_id']) return 'Склади не можуть бути однаковими';
+        if ($data['quantity'] <= 0) return 'Кількість повинна бути > 0';
+        if (empty($data['warehouse_from_id']) && empty($data['warehouse_to_id'])) {
+            return 'Вкажіть хоча б один склад';
+        }
+        if ($data['warehouse_from_id'] && $data['warehouse_to_id'] && $data['warehouse_from_id'] == $data['warehouse_to_id']) {
+            return 'Склади не повинні збігатися';
+        }
         return null;
     }
 
@@ -558,8 +477,8 @@ class MovementsController extends Controller
 
     private function isAjax(): bool
     {
-        return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        return !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+            && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
 
     /**
@@ -570,33 +489,103 @@ class MovementsController extends Controller
         if ($value === null || $value === '') return '';
         $v = (float)$value;
         switch ($format) {
-            case 'int':
-                return (string)(int)round($v);
+            case 'int':  return (string)(int)round($v);
             case 'hm':
                 $h = (int)floor($v);
                 $m = (int)round(($v - $h) * 60);
                 return $h . ':' . str_pad($m, 2, '0', STR_PAD_LEFT);
             case 'dec2':
-            default:
-                return number_format($v, 2, '.', '');
+            default:     return number_format($v, 2, '.', '');
         }
     }
 
     /**
-     * Генерація XLSX (Office Open XML) без зовнішніх бібліотек
+     * Парсинг XLSX
+     */
+    private function parseXlsx(string $filepath): array
+    {
+        $zip = new ZipArchive();
+        if ($zip->open($filepath) !== true) {
+            throw new Exception('Не вдалося відкрити файл як ZIP');
+        }
+
+        $sharedStrings = [];
+        $ssXml = $zip->getFromName('xl/sharedStrings.xml');
+        if ($ssXml) {
+            $ss = new SimpleXMLElement($ssXml);
+            foreach ($ss->si as $si) {
+                $text = '';
+                if (isset($si->t)) {
+                    $text = (string)$si->t;
+                } elseif (isset($si->r)) {
+                    foreach ($si->r as $run) {
+                        $text .= (string)$run->t;
+                    }
+                }
+                $sharedStrings[] = $text;
+            }
+        }
+
+        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        if (!$sheetXml) {
+            $zip->close();
+            throw new Exception('Не знайдено лист sheet1 у файлі');
+        }
+        $sheet = new SimpleXMLElement($sheetXml);
+        $zip->close();
+
+        $rows = [];
+        foreach ($sheet->sheetData->row as $rowEl) {
+            $rowData = [];
+            $maxCol = 0;
+            foreach ($rowEl->c as $cell) {
+                $ref = (string)$cell['r'];
+                $colIndex = $this->colToIndex($ref);
+                $maxCol = max($maxCol, $colIndex);
+
+                $value = '';
+                $type = (string)$cell['t'];
+                if ($type === 's') {
+                    $idx = (int)$cell->v;
+                    $value = $sharedStrings[$idx] ?? '';
+                } elseif ($type === 'inlineStr') {
+                    $value = (string)$cell->is->t;
+                } else {
+                    $value = (string)$cell->v;
+                }
+
+                while (count($rowData) < $colIndex) {
+                    $rowData[] = '';
+                }
+                $rowData[$colIndex] = $value;
+            }
+            $rows[] = $rowData;
+        }
+        return $rows;
+    }
+
+    private function colToIndex(string $cellRef): int
+    {
+        preg_match('/^([A-Z]+)/', $cellRef, $m);
+        $col = $m[1];
+        $result = 0;
+        for ($i = 0; $i < strlen($col); $i++) {
+            $result = $result * 26 + (ord($col[$i]) - ord('A') + 1);
+        }
+        return $result - 1;
+    }
+
+    /**
+     * Генерація XLSX
      */
     private function generateXlsx(array $movements): string
     {
-        // --- Дані для sheet ---
         $rows = [];
-
-        // Додаткові колонки для автоматичних рухів: показник, дельта, норма
         $rows[] = ['Дата', 'Звідки', 'Куди', 'Матеріал', 'Кількість', 'Показник', 'Дельта', 'Норма', 'Поправка', 'Примітка'];
 
         foreach ($movements as $m) {
             $isAuto = !empty($m['resource_log_id']);
             $fmt = $m['resource_format'] ?? 'dec2';
-
             $rows[] = [
                 date('d.m.Y', strtotime($m['movement_date'])),
                 $m['warehouse_from_name'] ?? '',
@@ -606,25 +595,24 @@ class MovementsController extends Controller
                 $isAuto ? $this->formatResourceValue($m['resource_value'] ?? null, $fmt) : '',
                 $isAuto ? $this->formatResourceValue($m['resource_delta'] ?? null, $fmt) : '',
                 $isAuto && isset($m['resource_rate']) ? rtrim(rtrim(number_format((float)$m['resource_rate'], 6, '.', ''), '0'), '.') : '',
-                ($m['resource_correction']>0 || $m['resource_correction']<0) ? $m['resource_correction'] : '', 
+                ($m['resource_correction'] > 0 || $m['resource_correction'] < 0) ? number_format((float)$m['resource_correction'], 2, '.', '') . '%' : '',
                 $m['note'] ?? '',
             ];
         }
 
-        // --- XML для sheet1 ---
-        $sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
+        // Sheet XML
+        $sheetXml  = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
         $sheetXml .= '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
         $sheetXml .= '<cols>';
-        $sheetXml .= '<col min="1" max="1" width="12" bestFit="1"/>';   // Дата
-        $sheetXml .= '<col min="2" max="2" width="24"/>';               // Звідки
-        $sheetXml .= '<col min="3" max="3" width="24"/>';               // Куди
-        $sheetXml .= '<col min="4" max="4" width="24"/>';               // Матеріал
-        $sheetXml .= '<col min="5" max="5" width="12"/>';               // Кількість
-        $sheetXml .= '<col min="6" max="6" width="14"/>';               // Показник
-        $sheetXml .= '<col min="7" max="7" width="14"/>';               // Дельта
-        $sheetXml .= '<col min="8" max="8" width="10"/>';               // Норма
-        $sheetXml .= '<col min="9" max="9" width="10"/>';               // Поправка
-        $sheetXml .= '<col min="10" max="10" width="30"/>';             // Примітка
+        $sheetXml .= '<col min="1" max="1" width="12" bestFit="1" customWidth="1"/>';
+        $sheetXml .= '<col min="2" max="3" width="20" bestFit="1" customWidth="1"/>';
+        $sheetXml .= '<col min="4" max="4" width="25" bestFit="1" customWidth="1"/>';
+        $sheetXml .= '<col min="5" max="5" width="12" bestFit="1" customWidth="1"/>';
+        $sheetXml .= '<col min="6" max="6" width="12" bestFit="1" customWidth="1"/>';
+        $sheetXml .= '<col min="7" max="7" width="12" bestFit="1" customWidth="1"/>';
+        $sheetXml .= '<col min="8" max="8" width="10" bestFit="1" customWidth="1"/>';
+        $sheetXml .= '<col min="9" max="9" width="10" bestFit="1" customWidth="1"/>';
+        $sheetXml .= '<col min="10" max="10" width="40" bestFit="1" customWidth="1"/>';
         $sheetXml .= '</cols>';
         $sheetXml .= '<sheetData>';
 
@@ -632,69 +620,59 @@ class MovementsController extends Controller
             $r = $rowIdx + 1;
             $sheetXml .= '<row r="' . $r . '">';
             foreach ($row as $colIdx => $cell) {
-                $colLetter = chr(65 + $colIdx); // A, B, C...
+                $colLetter = chr(65 + $colIdx);
                 $ref = $colLetter . $r;
-
                 if (is_numeric($cell) && !is_string($cell)) {
-                    // Число
                     $sheetXml .= '<c r="' . $ref . '"><v>' . $cell . '</v></c>';
                 } else {
-                    // Текст (inline string)
                     $sheetXml .= '<c r="' . $ref . '" t="inlineStr"><is><t>' . htmlspecialchars((string)$cell, ENT_XML1) . '</t></is></c>';
                 }
             }
             $sheetXml .= '</row>';
         }
-
         $sheetXml .= '</sheetData>';
 
-        // Автофільтр на заголовок
         $lastCol = chr(65 + count($rows[0]) - 1);
         $lastRow = count($rows);
         $sheetXml .= '<autoFilter ref="A1:' . $lastCol . $lastRow . '"/>';
-
         $sheetXml .= '</worksheet>';
 
-        // --- Решта XML-файлів для ZIP (xlsx = zip) ---
-        $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' .
-            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' .
-            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' .
-            '<Default Extension="xml" ContentType="application/xml"/>' .
-            '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' .
-            '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' .
-            '</Types>';
+        // Інші XML для ZIP
+        $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            . '<Default Extension="xml" ContentType="application/xml"/>'
+            . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+            . '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+            . '</Types>';
 
-        $rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' .
-            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' .
-            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' .
-            '</Relationships>';
+        $rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+            . '</Relationships>';
 
-        $workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' .
-            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' .
-            '<sheets><sheet name="Рух матеріалів" sheetId="1" r:id="rId1"/></sheets>' .
-            '</workbook>';
+        $workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            . '<sheets><sheet name="Рух" sheetId="1" r:id="rId1"/></sheets>'
+            . '</workbook>';
 
-        $workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' .
-            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' .
-            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' .
-            '</Relationships>';
+        $workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+            . '</Relationships>';
 
-        // --- Збираємо ZIP ---
         $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx');
         $zip = new ZipArchive();
         $zip->open($tmpFile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-
         $zip->addFromString('[Content_Types].xml', $contentTypes);
         $zip->addFromString('_rels/.rels', $rels);
         $zip->addFromString('xl/workbook.xml', $workbook);
         $zip->addFromString('xl/_rels/workbook.xml.rels', $workbookRels);
         $zip->addFromString('xl/worksheets/sheet1.xml', $sheetXml);
-
         $zip->close();
 
         $content = file_get_contents($tmpFile);
         unlink($tmpFile);
-
         return $content;
     }
 }
