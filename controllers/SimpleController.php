@@ -1,7 +1,6 @@
 <?php
 /**
  * Контролер для спрощеної сторінки заправника
- * Без меню, мінімальний функціонал, заточено під телефон
  */
 
 class SimpleController extends Controller
@@ -20,9 +19,6 @@ class SimpleController extends Controller
         $this->configModel = new ConfigModel($db);
     }
 
-    /**
-     * Головна сторінка заправника
-     */
     public function index(): void
     {
         $simpleWarehouseId = $this->getSimpleWarehouseId();
@@ -42,32 +38,166 @@ class SimpleController extends Controller
             return;
         }
 
-        // Дозволені матеріали
         $allowedMaterialIds = $this->getSimpleMaterials();
         $materials = $this->getMaterialsByIds($allowedMaterialIds);
 
-        // Всі склади крім тупого (для вибору куди видати)
-        $allWarehouses = $this->warehouseModel->getAll('name ASC');
-        $otherWarehouses = array_filter($allWarehouses, fn($w) => $w['id'] != $simpleWarehouseId);
-
-        // Дата
         $date = $this->get('date') ?: date('Y-m-d');
 
-        // Рухи за дату
-        $movements = $this->getMovementsForDate($simpleWarehouseId, $date);
+        // Всі склади крім тупого (для вибору куди видати)
+        $otherWarehouses = $this->db->query(
+            "SELECT id, name FROM warehouses WHERE id != ? ORDER BY name ASC",
+            [$simpleWarehouseId]
+        )->fetchAll();
+
+        // Розрахунок залишків та рухів
+        $data = $this->getWarehouseData($simpleWarehouseId, $date, $allowedMaterialIds);
 
         $this->renderSimple('simple/index', [
             'warehouse' => $warehouse,
             'materials' => $materials,
             'otherWarehouses' => $otherWarehouses,
             'date' => $date,
-            'movements' => $movements,
+            'openingBalances' => $data['opening'],
+            'movements' => $data['movements'],
+            'closingBalances' => $data['closing'],
         ]);
     }
 
     /**
-     * Зберегти надходження (ззовні -> тупий склад)
+     * Отримати дані по складу: залишки та рухи
      */
+    private function getWarehouseData(int $warehouseId, string $date, array $materialIds): array
+    {
+        $db = $this->db;
+        
+        // Вхідні залишки на початок дня
+        $openingQuery = "
+            SELECT 
+                m.id AS material_id,
+                m.name AS material_name,
+                COALESCE(SUM(CASE WHEN warehouse_to_id = ? THEN quantity ELSE 0 END), 0) -
+                COALESCE(SUM(CASE WHEN warehouse_from_id = ? THEN quantity ELSE 0 END), 0) AS opening_balance
+            FROM movements mv
+            JOIN materials m ON mv.material_id = m.id
+            WHERE mv.movement_date < ?
+        ";
+        $params = [$warehouseId, $warehouseId, $date];
+        
+        if (!empty($materialIds)) {
+            $openingQuery .= " AND mv.material_id IN (" . implode(',', array_fill(0, count($materialIds), '?')) . ")";
+            $params = array_merge($params, $materialIds);
+        }
+        
+        $openingQuery .= " GROUP BY m.id, m.name ORDER BY m.name";
+        
+        $openingRows = $db->query($openingQuery, $params)->fetchAll();
+        $opening = [];
+        foreach ($openingRows as $row) {
+            $opening[$row['material_id']] = [
+                'material_id' => $row['material_id'],
+                'material_name' => $row['material_name'],
+                'balance' => (float)$row['opening_balance']
+            ];
+        }
+
+        // Рухи за день (детально, кожен рух окремим рядком)
+        $movementQuery = "
+            SELECT 
+                mv.id,
+                mv.material_id,
+                m.name AS material_name,
+                mv.quantity,
+                mv.warehouse_from_id,
+                mv.warehouse_to_id,
+                wf.name AS warehouse_from_name,
+                wt.name AS warehouse_to_name,
+                CASE 
+                    WHEN mv.warehouse_to_id = ? THEN 'in'
+                    WHEN mv.warehouse_from_id = ? THEN 'out'
+                    ELSE 'other'
+                END AS type
+            FROM movements mv
+            JOIN materials m ON mv.material_id = m.id
+            LEFT JOIN warehouses wf ON mv.warehouse_from_id = wf.id
+            LEFT JOIN warehouses wt ON mv.warehouse_to_id = wt.id
+            WHERE mv.movement_date = ?
+              AND (mv.warehouse_from_id = ? OR mv.warehouse_to_id = ?)
+        ";
+        $movementParams = [$warehouseId, $warehouseId, $date, $warehouseId, $warehouseId];
+        
+        if (!empty($materialIds)) {
+            $movementQuery .= " AND mv.material_id IN (" . implode(',', array_fill(0, count($materialIds), '?')) . ")";
+            $movementParams = array_merge($movementParams, $materialIds);
+        }
+        
+        $movementQuery .= " ORDER BY m.name, mv.id";
+        
+        $movementRows = $db->query($movementQuery, $movementParams)->fetchAll();
+        
+        // Кожен рух окремим записом
+        $movements = [];
+        foreach ($movementRows as $row) {
+            $correspondent = '';
+            $incoming = 0;
+            $outgoing = 0;
+            
+            if ($row['type'] === 'in') {
+                $correspondent = $row['warehouse_from_name'] ?? 'Ззовні';
+                $incoming = (float)$row['quantity'];
+            } elseif ($row['type'] === 'out') {
+                $correspondent = $row['warehouse_to_name'] ?? 'Списано';
+                $outgoing = (float)$row['quantity'];
+            }
+            
+            $movements[] = [
+                'id' => $row['id'],
+                'material_id' => $row['material_id'],
+                'material_name' => $row['material_name'],
+                'correspondent' => $correspondent,
+                'incoming' => $incoming,
+                'outgoing' => $outgoing
+            ];
+        }
+
+        // Вихідні залишки (агрегуємо рухи по матеріалах для розрахунку)
+        $movementsAggregated = [];
+        foreach ($movements as $mv) {
+            $matId = $mv['material_id'];
+            if (!isset($movementsAggregated[$matId])) {
+                $movementsAggregated[$matId] = ['incoming' => 0, 'outgoing' => 0];
+            }
+            $movementsAggregated[$matId]['incoming'] += $mv['incoming'];
+            $movementsAggregated[$matId]['outgoing'] += $mv['outgoing'];
+        }
+        
+        $closing = [];
+        $allMaterialIds = array_unique(array_merge(
+            array_keys($opening),
+            array_keys($movementsAggregated)
+        ));
+        
+        foreach ($allMaterialIds as $matId) {
+            $openingBalance = $opening[$matId]['balance'] ?? 0;
+            $incoming = $movementsAggregated[$matId]['incoming'] ?? 0;
+            $outgoing = $movementsAggregated[$matId]['outgoing'] ?? 0;
+            
+            $closing[$matId] = [
+                'material_id' => $matId,
+                'material_name' => $opening[$matId]['material_name'] ?? ($movements[0]['material_name'] ?? ''),
+                'balance' => $openingBalance + $incoming - $outgoing
+            ];
+        }
+
+        // Сортування за назвою
+        uasort($closing, fn($a, $b) => strcmp($a['material_name'], $b['material_name']));
+
+        return [
+            'opening' => $opening,
+            'movements' => $movements,
+            'closing' => $closing
+        ];
+    }
+
     public function incoming(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -85,7 +215,6 @@ class SimpleController extends Controller
         $materialId = (int)$this->post('material_id');
         $quantity = (float)$this->post('quantity');
 
-        // Валідація
         if (!$materialId) {
             $this->jsonResponse(['success' => false, 'error' => 'Оберіть матеріал']);
             return;
@@ -95,14 +224,12 @@ class SimpleController extends Controller
             return;
         }
 
-        // Перевірка що матеріал дозволений
         $allowedMaterials = $this->getSimpleMaterials();
         if (!empty($allowedMaterials) && !in_array($materialId, $allowedMaterials)) {
             $this->jsonResponse(['success' => false, 'error' => 'Цей матеріал не дозволено']);
             return;
         }
 
-        // Перевірка закритого періоду
         if ($this->configModel->isDateClosed($date)) {
             $this->jsonResponse(['success' => false, 'error' => 'Дата в закритому періоді']);
             return;
@@ -111,7 +238,7 @@ class SimpleController extends Controller
         try {
             $this->movementModel->create([
                 'movement_date' => $date,
-                'warehouse_from_id' => null,  // Ззовні
+                'warehouse_from_id' => null,
                 'warehouse_to_id' => $simpleWarehouseId,
                 'material_id' => $materialId,
                 'quantity' => $quantity,
@@ -124,9 +251,6 @@ class SimpleController extends Controller
         }
     }
 
-    /**
-     * Зберегти видачу (тупий склад -> інший склад)
-     */
     public function outgoing(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -145,7 +269,6 @@ class SimpleController extends Controller
         $targetWarehouseId = (int)$this->post('target_warehouse_id');
         $quantity = (float)$this->post('quantity');
 
-        // Валідація
         if (!$materialId) {
             $this->jsonResponse(['success' => false, 'error' => 'Оберіть матеріал']);
             return;
@@ -163,14 +286,12 @@ class SimpleController extends Controller
             return;
         }
 
-        // Перевірка що матеріал дозволений
         $allowedMaterials = $this->getSimpleMaterials();
         if (!empty($allowedMaterials) && !in_array($materialId, $allowedMaterials)) {
             $this->jsonResponse(['success' => false, 'error' => 'Цей матеріал не дозволено']);
             return;
         }
 
-        // Перевірка закритого періоду
         if ($this->configModel->isDateClosed($date)) {
             $this->jsonResponse(['success' => false, 'error' => 'Дата в закритому періоді']);
             return;
@@ -192,9 +313,6 @@ class SimpleController extends Controller
         }
     }
 
-    /**
-     * Отримати рухи за дату (AJAX)
-     */
     public function movements(): void
     {
         $simpleWarehouseId = $this->getSimpleWarehouseId();
@@ -204,27 +322,30 @@ class SimpleController extends Controller
         }
 
         $date = $this->get('date') ?: date('Y-m-d');
-        $movements = $this->getMovementsForDate($simpleWarehouseId, $date);
+        $materialId = $this->get('material_id') ? (int)$this->get('material_id') : null;
+        $allowedMaterialIds = $this->getSimpleMaterials();
+        
+        // Фільтр по матеріалу якщо вказано
+        if ($materialId) {
+            $allowedMaterialIds = [$materialId];
+        }
+        
+        $data = $this->getWarehouseData($simpleWarehouseId, $date, $allowedMaterialIds);
 
         $this->jsonResponse([
             'success' => true,
-            'movements' => $movements,
-            'date' => $date,
+            'opening' => array_values($data['opening']),
+            'movements' => array_values($data['movements']),
+            'closing' => array_values($data['closing']),
         ]);
     }
 
-    /**
-     * Отримати ID тупого складу з конфігурації
-     */
     private function getSimpleWarehouseId(): ?int
     {
         $value = $this->configModel->getValue('simple_warehouse');
         return $value ? (int)$value : null;
     }
 
-    /**
-     * Отримати масив дозволених матеріалів
-     */
     private function getSimpleMaterials(): array
     {
         $value = $this->configModel->getValue('simple_materials');
@@ -234,13 +355,9 @@ class SimpleController extends Controller
         return is_array($decoded) ? array_map('intval', $decoded) : [];
     }
 
-    /**
-     * Отримати матеріали за ID
-     */
     private function getMaterialsByIds(array $ids): array
     {
         if (empty($ids)) {
-            // Якщо не вказані — повернути всі
             return $this->materialModel->getAll('name ASC');
         }
 
@@ -248,9 +365,6 @@ class SimpleController extends Controller
         return array_filter($all, fn($m) => in_array($m['id'], $ids));
     }
 
-    /**
-     * Отримати рухи по складу за дату
-     */
     private function getMovementsForDate(int $warehouseId, string $date): array
     {
         return $this->db->query(
@@ -269,22 +383,16 @@ class SimpleController extends Controller
         )->fetchAll();
     }
 
-    /**
-     * Рендер без стандартного layout (спрощений)
-     */
     private function renderSimple(string $view, array $data = []): void
     {
         extract($data);
         require ROOT_PATH . '/views/' . $view . '.php';
     }
 
-    /**
-     * JSON відповідь
-     */
     private function jsonResponse(array $data): void
     {
         header('Content-Type: application/json');
-        echo json_encode($data);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
         exit;
     }
 }
