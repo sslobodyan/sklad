@@ -2,7 +2,7 @@
 /**
  * Контролер руху матеріалів
  * 
- * ЗМІНА: delete() тепер зберігає фільтри (redirect назад на referer)
+ * ЗМІНА: delete() тепер зберігає фільтри в сесію і відновлює їх
  */
 
 class MovementsController extends Controller
@@ -28,6 +28,9 @@ class MovementsController extends Controller
             'warehouse_id' => $this->get('warehouse_id'),
             'material_id' => $this->get('material_id'),
         ];
+
+        // Зберігаємо поточні фільтри в сесію для відновлення після видалення
+        $_SESSION['movements_filters'] = $filters;
 
         // При першому відкритті таблиці Рух — беремо дати з головного діапазону.
         // Якщо є highlight, дати не нав'язуємо, щоб точно показати потрібний запис.
@@ -123,6 +126,9 @@ class MovementsController extends Controller
         }
     }
 
+    /**
+     * Видалення запису з відновленням фільтрів
+     */
     public function delete($id): void
     {
         $existing = $this->model->getById((int)$id);
@@ -145,16 +151,31 @@ class MovementsController extends Controller
     }
 
     /**
-     * Редірект назад на сторінку з якої прийшли (зберігає фільтри)
+     * Редірект назад з відновленням фільтрів з сесії
      */
     private function redirectBack(): void
     {
-        $referer = $_SERVER['HTTP_REFERER'] ?? null;
-        if ($referer) {
-            header('Location: ' . $referer);
-        } else {
-            $this->redirect('movements');
+        // Спробуємо відновити фільтри з сесії
+        $filters = $_SESSION['movements_filters'] ?? [];
+        
+        // Формуємо URL з фільтрами
+        $redirectUrl = BASE_PATH . '/movements';
+        
+        if (!empty($filters)) {
+            $params = [];
+            if (!empty($filters['date_from'])) $params['date_from'] = $filters['date_from'];
+            if (!empty($filters['date_to'])) $params['date_to'] = $filters['date_to'];
+            if (!empty($filters['warehouse_id'])) $params['warehouse_id'] = $filters['warehouse_id'];
+            if (!empty($filters['material_id'])) $params['material_id'] = $filters['material_id'];
+            if (!empty($filters['sort'])) $params['sort'] = $filters['sort'];
+            if (!empty($filters['order'])) $params['order'] = $filters['order'];
+            
+            if (!empty($params)) {
+                $redirectUrl .= '?' . http_build_query($params);
+            }
         }
+        
+        header('Location: ' . $redirectUrl);
         exit;
     }
 
