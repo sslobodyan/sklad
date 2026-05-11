@@ -20,9 +20,10 @@ abstract class Controller
         $data['basePath'] = BASE_PATH;
         $data['activePage'] = $data['activePage'] ?? '';
         
-        // Flash повідомлення
-        $data['flash'] = $_SESSION['flash'] ?? null;
-        unset($_SESSION['flash']);
+        // Flash повідомлення (масив)
+        $flashMessages = $_SESSION['flash_messages'] ?? [];
+        unset($_SESSION['flash_messages']);
+        $data['flashMessages'] = $flashMessages;
         
         // Глобальний діапазон дат (cookie → session → default)
         $data['globalDateFrom'] = $_COOKIE['sklad_date_from'] ?? $_SESSION['date_from'] ?? date('Y-m-01');
@@ -100,11 +101,17 @@ abstract class Controller
     }
 
     /**
-     * Flash повідомлення
+     * Flash повідомлення (додає в масив)
      */
     protected function flash(string $type, string $message): void
     {
-        $_SESSION['flash'] = ['type' => $type, 'message' => $message];
+        if (!isset($_SESSION['flash_messages'])) {
+            $_SESSION['flash_messages'] = [];
+        }
+        $_SESSION['flash_messages'][] = [
+            'type' => $type,
+            'message' => $message
+        ];
     }
 
     /**

@@ -7,18 +7,65 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= $basePath ?>/assets/css/style.css">
+    <style>
+        .flash-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .flash-message {
+            max-width: 500px;
+            margin: 12px auto;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: auto;
+        }
+        .flash-message.visible { opacity: 1; transform: translateY(0); }
+        .flash-message.hiding { opacity: 0; transform: translateY(-20px); }
+        .flash-message.success { background: #2e7d32; color: white; }
+        .flash-message.error { background: #c62828; color: white; }
+        .flash-message.info { background: #1565c0; color: white; }
+        .flash-message.warning { background: #f57c00; color: white; }
+        .flash-message .flash-icon { font-size: 18px; flex-shrink: 0; }
+        .flash-message .flash-text { flex: 1; }
+        .flash-message .flash-close {
+            background: none; border: none; color: inherit;
+            cursor: pointer; padding: 4px; font-size: 18px; opacity: 0.8;
+        }
+        .flash-message .flash-close:hover { opacity: 1; }
+    </style>
 </head>
 <body>
+    <div class="flash-container" id="flashContainer"></div>
+    
+    <script>
+        // Глобальні змінні для app.js
+        window.basePath = <?= json_encode($basePath) ?>;
+        window.flashMessages = <?= json_encode($flashMessages ?? []) ?>;
+    </script>
+    
     <div class="app">
         <div class="app-body">
-            <!-- Sidebar -->
             <aside class="sidebar" id="sidebar">
                 <nav class="sidebar-nav">
                     <div class="nav-group">
                         <div class="nav-group-label">Довідники</div>
                         <a href="<?= $basePath ?>/warehouses" class="nav-item <?= $activePage === 'warehouses' ? 'active' : '' ?>">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M3 14h7v7H3z"/><path d="M14 14h7v7h-7z"/>
+                                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                                <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
                             </svg>
                             <span>Склади</span>
                         </a>
@@ -50,7 +97,7 @@
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
                             </svg>
-                            <span>Норми списання</span>
+                            <span>Норми</span>
                         </a>
                         <a href="<?= $basePath ?>/resources/types" class="nav-item <?= $activePage === 'resource-types' ? 'active' : '' ?>">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -74,125 +121,105 @@
                             <span>Звіт по матеріалу</span>
                         </a>
                     </div>
-
-<div class="nav-group">
-    <div class="nav-group-label">Система</div>
-    <a href="<?= BASE_PATH ?>/settings/simple" class="nav-item <?= $activePage === 'settings-simple' ? 'active' : '' ?>">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
-        </svg>
-        Заправка
-    </a>
-</div>
-
-    
+                    <div class="nav-group">
+                        <div class="nav-group-label">Система</div>
+                        <a href="<?= $basePath ?>/settings/simple" class="nav-item <?= $activePage === 'settings-simple' ? 'active' : '' ?>">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+                            </svg>
+                            <span>Заправка</span>
+                        </a>
+                    </div>
                 </nav>
             </aside>
 
-            <!-- Sidebar toggle for mobile -->
-            <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarToggle">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="3" y1="12" x2="21" y2="12"/>
-                    <line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-            </button>
-
-            <!-- Main Content -->
             <main class="main">
-                <?php if (!empty($flash)): ?>
-                <div class="alert alert-<?= $flash['type'] ?>" id="flashAlert">
-                    <?= htmlspecialchars($flash['message']) ?>
-                    <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
-                </div>
-                <?php endif; ?>
-
                 <?= $content ?>
             </main>
         </div>
     </div>
 
-    <!-- Date Panel Dropdown -->
     <div class="date-panel" id="datePanel">
         <div class="date-panel-overlay" onclick="toggleDatePanel()"></div>
         <div class="date-panel-content" id="datePanelContent">
-
             <div class="dp-section">
                 <div class="dp-label">Період для звітів</div>
-                <form action="<?= $basePath ?>/settings/dates" method="POST">
-                    <div class="dp-row">
-                        <div class="dp-field">
-                            <span class="dp-field-label">Від</span>
-                            <input type="date" name="date_from" value="<?= $globalDateFrom ?>">
-                        </div>
-                        <div class="dp-field">
-                            <span class="dp-field-label">До</span>
-                            <input type="date" name="date_to" value="<?= $globalDateTo ?>">
-                        </div>
+                <div class="dp-row">
+                    <div class="dp-field">
+                        <label class="dp-field-label">Від</label>
+                        <input type="date" id="dateFrom" value="<?= htmlspecialchars($globalDateFrom) ?>">
                     </div>
-                    <div class="dp-presets">
-                        <a href="<?= $basePath ?>/settings/preset/current-month">Поточний місяць</a>
-                        <a href="<?= $basePath ?>/settings/preset/last-month">Минулий місяць</a>
-                        <a href="<?= $basePath ?>/settings/preset/current-year">Поточний рік</a>
+                    <div class="dp-field">
+                        <label class="dp-field-label">До</label>
+                        <input type="date" id="dateTo" value="<?= htmlspecialchars($globalDateTo) ?>">
                     </div>
-                    <button type="submit" class="dp-btn">Застосувати</button>
-                </form>
+                </div>
+                <div class="dp-presets">
+                    <a href="<?= $basePath ?>/settings/preset/current-month">Поточний місяць</a>
+                    <a href="<?= $basePath ?>/settings/preset/last-month">Минулий місяць</a>
+                    <a href="<?= $basePath ?>/settings/preset/current-year">Поточний рік</a>
+                </div>
+                <button class="dp-btn" onclick="applyDateRange()">Застосувати</button>
             </div>
-
             <div class="dp-divider"></div>
-
             <div class="dp-section">
                 <div class="dp-label">Закритий період</div>
-                <form action="<?= $basePath ?>/settings/closeperiod" method="POST">
+                <form method="post" action="<?= $basePath ?>/settings/closeperiod">
                     <div class="dp-row">
-                        <div class="dp-field" style="flex:1">
-                            <span class="dp-field-label">Закрито по</span>
-                            <input type="date" name="closed_date" value="<?= $closedDate ?? '' ?>">
+                        <div class="dp-field">
+                            <label class="dp-field-label">Закрито по</label>
+                            <input type="date" name="closed_date" value="<?= htmlspecialchars($closedDate ?? '') ?>">
                         </div>
-                        <button type="submit" class="dp-btn" style="align-self:flex-end">
-                            <?= $closedDate ? 'Оновити' : 'Закрити' ?>
-                        </button>
                     </div>
-                    <?php if ($closedDate): ?>
-                    <div class="dp-closed-info">🔒 Рухи по <?= formatDateUa($closedDate) ?> заблоковані</div>
-                    <button type="submit" class="dp-clear-btn" onclick="this.form.querySelector('input[name=closed_date]').value=''">
-                        Зняти блокування
-                    </button>
+                    <?php if (!empty($closedDate)): ?>
+                    <div class="dp-closed-info">🔒 Рухи по <?= date('d.m.Y', strtotime($closedDate)) ?> заблоковані</div>
                     <?php endif; ?>
+                    <button type="submit" class="dp-btn">Зберегти</button>
                 </form>
             </div>
-
         </div>
     </div>
 
-    <!-- Modal Container -->
     <div class="modal-backdrop" id="modalBackdrop" onclick="closeModal()"></div>
     <div class="modal" id="modal">
         <div class="modal-header">
-            <div class="modal-title" id="modalTitle"></div>
-            <button class="modal-close" onclick="closeModal()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-            </button>
+            <h3 id="modalTitle"></h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
         <div class="modal-body" id="modalBody"></div>
     </div>
 
     <script src="<?= $basePath ?>/assets/js/app.js"></script>
     <script>
-        window.basePath = '<?= $basePath ?>';
-        window.globalDateFrom = '<?= $globalDateFrom ?>';
-        window.globalDateTo = '<?= $globalDateTo ?>';
-
-        var flash = document.getElementById('flashAlert');
-        if (flash) {
-            setTimeout(function() {
-                flash.style.opacity = '0';
-                setTimeout(function() { flash.remove(); }, 300);
-            }, 3000);
-        }
+        // Показ flash-повідомлень
+        (function() {
+            var container = document.getElementById('flashContainer');
+            var messages = window.flashMessages || [];
+            
+            function showFlash(message, type) {
+                var icons = { success: '✓', error: '⚠', info: 'ℹ', warning: '⚡' };
+                var div = document.createElement('div');
+                div.className = 'flash-message ' + type;
+                div.innerHTML = 
+                    '<span class="flash-icon">' + (icons[type] || 'ℹ') + '</span>' +
+                    '<span class="flash-text">' + escapeHtml(message) + '</span>' +
+                    '<button class="flash-close" onclick="this.parentElement.remove()">&times;</button>';
+                container.appendChild(div);
+                requestAnimationFrame(function() { div.classList.add('visible'); });
+                setTimeout(function() {
+                    div.classList.add('hiding');
+                    setTimeout(function() { div.remove(); }, 300);
+                }, 4000);
+            }
+            
+            function escapeHtml(text) {
+                var div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            messages.forEach(function(msg) { showFlash(msg.message, msg.type); });
+        })();
     </script>
 </body>
 </html>
