@@ -103,4 +103,28 @@ class ConfigModel extends Model
             $this->setValue('simple_materials', json_encode(array_values(array_map('intval', $materialIds))));
         }
     }
+
+    /**
+     * Отримати масив дозволених складів для видачі
+     */
+    public function getSimpleWarehouses(): array
+    {
+        $value = $this->getValue('simple_warehouses');
+        if (!$value) return [];
+        
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? array_map('intval', $decoded) : [];
+    }
+
+    /**
+     * Встановити дозволені склади для видачі
+     */
+    public function setSimpleWarehouses(array $warehouseIds): void
+    {
+        if (empty($warehouseIds)) {
+            $this->setValue('simple_warehouses', null);
+        } else {
+            $this->setValue('simple_warehouses', json_encode(array_values(array_map('intval', $warehouseIds))));
+        }
+    }
 }

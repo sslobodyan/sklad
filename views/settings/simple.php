@@ -41,6 +41,20 @@ $selectedMaterialIds = $currentMaterials ?? [];
             <input type="hidden" name="simple_materials" id="materialFilterValue" value="<?= htmlspecialchars(implode(',', $selectedMaterialIds)) ?>">
         </div>
         
+        <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Склади для видачі
+                <?php $selectedWarehouseIds = $currentWarehouses ?? []; ?>
+                <?php if (!empty($selectedWarehouseIds)): ?>
+                <span style="font-weight:400;color:var(--blue)">(<?= count($selectedWarehouseIds) ?>)</span>
+                <?php endif; ?>
+            </label>
+            <button type="button" class="wh-filter-btn" onclick="openWarehouseFilter()">
+                <span><?= empty($selectedWarehouseIds) ? 'Усі склади' : count($selectedWarehouseIds) . ' обрано' ?></span>
+                <svg width="10" height="10" viewBox="0 0 10 10"><path fill="currentColor" d="M5 7L1 3h8z"/></svg>
+            </button>
+            <input type="hidden" name="simple_warehouses" id="warehouseFilterValue" value="<?= htmlspecialchars(implode(',', $selectedWarehouseIds)) ?>">
+        </div>
+        
         <div class="form-group filter-action-inline" style="margin-bottom:0">
             <label class="form-label">&nbsp;</label>
             <div class="filter-action-stack">
@@ -257,6 +271,106 @@ function applyMaterialFilter() {
     }
     
     // Оновити badge
+    var badge = document.querySelector('.form-label span[style]');
+    if (selected.length > 0) {
+        if (!badge) {
+            var label = document.querySelector('.wh-filter-btn').closest('.form-group').querySelector('.form-label');
+            badge = document.createElement('span');
+            badge.style.cssText = 'font-weight:400;color:var(--blue)';
+            label.appendChild(badge);
+        }
+        badge.textContent = '(' + selected.length + ')';
+    } else if (badge) {
+        badge.remove();
+    }
+    
+    closeModal();
+}
+
+// Відкрити фільтр складів
+function openWarehouseFilter() {
+    var warehouses = <?= json_encode($warehouses) ?>;
+    var selected = <?= json_encode($currentWarehouses ?? []) ?>;
+    
+    var html = '<div class=\"material-filter-modal\">';
+    html += '<div class=\"mf-header\">';
+    html += '<input type=\"text\" class=\"mf-search\" placeholder=\"Пошук складів...\" oninput=\"filterWarehouses(this.value)\">';
+    html += '<div class=\"mf-actions\">';
+    html += '<button type=\"button\" class=\"btn btn-sm\" onclick=\"selectAllWarehouses()\">Обрати все</button>';
+    html += '<button type=\"button\" class=\"btn btn-sm btn-secondary\" onclick=\"deselectAllWarehouses()\">Зняти все</button>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class=\"mf-list\" id=\"warehouseFilterList\">';
+    
+    warehouses.forEach(function(w) {
+        var isChecked = selected.indexOf(w.id) !== -1 ? 'checked' : '';
+        html += '<label class=\"mf-item\">';
+        html += '<input type=\"checkbox\" value=\"' + w.id + '\" ' + isChecked + ' onchange=\"updateWarehouseCount()\">';
+        html += '<span>' + escapeHtml(w.name) + '</span>';
+        html += '</label>';
+    });
+    
+    html += '</div>';
+    html += '<div class=\"mf-footer\">';
+    html += '<button type=\"button\" class=\"btn btn-primary\" onclick=\"applyWarehouseFilter()\">Застосувати</button>';
+    html += '</div>';
+    html += '</div>';
+    
+    openModal('Склади для видачі', html);
+    updateWarehouseCount();
+}
+
+// Фільтрація складів
+function filterWarehouses(query) {
+    var q = query.toLowerCase();
+    var items = document.querySelectorAll('.mf-item');
+    items.forEach(function(item) {
+        var text = item.querySelector('span').textContent.toLowerCase();
+        item.style.display = text.indexOf(q) !== -1 ? '' : 'none';
+    });
+}
+
+// Обрати все (склади)
+function selectAllWarehouses() {
+    document.querySelectorAll('.mf-item input[type="checkbox"]').forEach(function(cb) {
+        if (cb.closest('.mf-item').style.display !== 'none') {
+            cb.checked = true;
+        }
+    });
+    updateWarehouseCount();
+}
+
+// Зняти все (склади)
+function deselectAllWarehouses() {
+    document.querySelectorAll('.mf-item input[type="checkbox"]').forEach(function(cb) {
+        cb.checked = false;
+    });
+    updateWarehouseCount();
+}
+
+// Оновити лічильник (склади)
+function updateWarehouseCount() {
+    var count = document.querySelectorAll('.mf-item input[type="checkbox"]:checked').length;
+    var footer = document.querySelector('.mf-footer');
+    if (footer) {
+        footer.dataset.count = count;
+    }
+}
+
+// Застосувати фільтр (склади)
+function applyWarehouseFilter() {
+    var selected = [];
+    document.querySelectorAll('.mf-item input[type="checkbox"]:checked').forEach(function(cb) {
+        selected.push(cb.value);
+    });
+    
+    document.getElementById('warehouseFilterValue').value = selected.join(',');
+    
+    var btn = document.querySelector('.wh-filter-btn span');
+    if (btn) {
+        btn.textContent = selected.length === 0 ? 'Усі склади' : selected.length + ' обрано';
+    }
+    
     var badge = document.querySelector('.form-label span[style]');
     if (selected.length > 0) {
         if (!badge) {

@@ -144,6 +144,7 @@ class SettingsController extends Controller
         
         $currentWarehouse = $config->getSimpleWarehouse();
         $currentMaterials = $config->getSimpleMaterials();
+        $currentWarehouses = $config->getSimpleWarehouses();
 
         $this->render('settings/simple', [
             'title' => 'Налаштування заправки',
@@ -152,6 +153,7 @@ class SettingsController extends Controller
             'materials' => $materials,
             'currentWarehouse' => $currentWarehouse,
             'currentMaterials' => $currentMaterials,
+            'currentWarehouses' => $currentWarehouses,
         ]);
     }
 
@@ -182,11 +184,18 @@ class SettingsController extends Controller
             $materialIds = array_map('intval', explode(',', $materialIdsRaw));
         }
         
+        // Парсимо comma-separated рядок у масив для складів
+        $warehouseIdsRaw = $this->post('simple_warehouses');
+        $warehouseIds = [];
+        if (!empty($warehouseIdsRaw)) {
+            $warehouseIds = array_map('intval', explode(',', $warehouseIdsRaw));
+        }
+        
         $config->setSimpleWarehouse($warehouseId);
         $config->setSimpleMaterials($materialIds);
+        $config->setSimpleWarehouses($warehouseIds);
 
-        //$this->flash('success', 'Налаштування заправки збережено '.$materialIds);
-        $this->flash('success', 'Збережено '.implode(", ", $materialIds));
+        $this->flash('success', 'Налаштування заправки збережено');
         $this->redirect('/settings/simple');
     }
 

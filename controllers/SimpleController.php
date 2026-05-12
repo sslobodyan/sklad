@@ -46,11 +46,22 @@ class SimpleController extends Controller
 
         $date = $this->get('date') ?: date('Y-m-d');
 
+        // Дозволені склади для видачі
+        $allowedWarehouseIds = $this->configModel->getSimpleWarehouses();
+        
         // Всі склади крім тупого (для вибору куди видати)
-        $otherWarehouses = $this->db->query(
-            "SELECT id, name FROM warehouses WHERE id != ? ORDER BY name ASC",
-            [$simpleWarehouseId]
-        )->fetchAll();
+        if (!empty($allowedWarehouseIds)) {
+            $placeholders = implode(',', array_fill(0, count($allowedWarehouseIds), '?'));
+            $otherWarehouses = $this->db->query(
+                "SELECT id, name FROM warehouses WHERE id != ? AND id IN ($placeholders) ORDER BY name ASC",
+                array_merge([$simpleWarehouseId], $allowedWarehouseIds)
+            )->fetchAll();
+        } else {
+            $otherWarehouses = $this->db->query(
+                "SELECT id, name FROM warehouses WHERE id != ? ORDER BY name ASC",
+                [$simpleWarehouseId]
+            )->fetchAll();
+        }
 
         // Розрахунок залишків та рухів
         $data = $this->getWarehouseData($simpleWarehouseId, $date, $allowedMaterialIds);
