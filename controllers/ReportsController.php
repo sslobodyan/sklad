@@ -8,6 +8,7 @@ class ReportsController extends Controller
     private MovementModel $movementModel;
     private WarehouseModel $warehouseModel;
     private MaterialModel $materialModel;
+    private ResourceModel $resourceModel;
 
     public function __construct(Database $db)
     {
@@ -15,6 +16,7 @@ class ReportsController extends Controller
         $this->movementModel = new MovementModel($db);
         $this->warehouseModel = new WarehouseModel($db);
         $this->materialModel = new MaterialModel($db);
+        $this->resourceModel = new ResourceModel($db);
     }
 
     /**
@@ -96,6 +98,79 @@ class ReportsController extends Controller
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,
             'activePage' => 'report-material',
+        ]);
+    }
+
+    /**
+     * Звіт про витрачання ресурсів
+     */
+    public function resource(): void
+    {
+        $dateFrom = $this->get('date_from') ?: SettingsController::getDateFrom();
+        $dateTo = $this->get('date_to') ?: SettingsController::getDateTo();
+        $warehouseIds = $this->get('warehouse_ids');
+        if (is_string($warehouseIds)) {
+            $warehouseIds = array_filter(explode(',', $warehouseIds));
+        }
+        if (!is_array($warehouseIds)) {
+            $warehouseIds = [];
+        }
+        $warehouseIds = array_map('intval', $warehouseIds);
+        
+        $resourceTypeId = (int)$this->get('resource_type_id', 0);
+
+        $report = [];
+        $totals = [
+            'opening' => 0,
+            'current' => 0,
+            'delta' => 0,
+            'materials' => []
+        ];
+
+        if ($resourceTypeId) {
+            $report = $this->resourceModel->getResourceUsageReport($dateFrom, $dateTo, $warehouseIds, $resourceTypeId);
+            
+            // Підрахунок підсумків
+            foreach ($report as $row) {
+                $totals['opening'] += (float)$row['opening_reading'];
+                $totals['current'] += (float)$row['current_reading'];
+                $totals['delta'] += (float)$row['resource_delta'];
+                
+                foreach ($row['materials'] as $matId => $mat) {
+                    if (!isset($totals['materials'][$matId])) {
+                        $totals['materials'][$matId] = [
+                            'name' => $mat['name'],
+                            'received' => 0,
+                            'rate' => $mat['rate'],
+                            'correction' => 0,
+                            'consumed' => 0,
+                            'balance' => 0
+                        ];
+                    }
+                    $totals['materials'][$matId]['received'] += (float)$mat['received'];
+                    $totals['materials'][$matId]['correction'] += (float)$mat['correction'];
+                    $totals['materials'][$matId]['consumed'] += (float)$mat['consumed'];
+                    $totals['materials'][$matId]['balance'] += (float)$mat['balance'];
+                }
+            }
+        }
+
+        $warehouses = $this->warehouseModel->getAll('name ASC');
+        $types = $this->resourceModel->getTypes();
+        $materials = $this->materialModel->getAll('name ASC');
+
+        $this->render('reports/resource_usage', [
+            'title' => 'Звіт про витрачання ресурсів',
+            'report' => $report,
+            'totals' => $totals,
+            'warehouses' => $warehouses,
+            'types' => $types,
+            'materials' => $materials,
+            'selectedWarehouseIds' => $warehouseIds,
+            'resourceTypeId' => $resourceTypeId,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+            'activePage' => 'report-resource',
         ]);
     }
 }
