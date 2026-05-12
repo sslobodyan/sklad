@@ -259,7 +259,7 @@ $printSort = ($sortNames[$sortKey] ?? 'Дата') . ' (' . ($sortDir === 'asc' ?
                     <td class="text-muted">→</td>
                     <td><?= $m['warehouse_to_name'] ? htmlspecialchars($m['warehouse_to_name']) : '<span class="text-muted" style="font-size:11px">списання</span>' ?></td>
                     <td class="font-medium"><?= htmlspecialchars($m['material_name']) ?></td>
-                    <td class="text-right font-mono font-bold"><?= number_format((float)$m['quantity'], 2, '.', ' ') ?></td>
+                    <td class="text-right font-mono font-bold"><?= number_format((float)$m['quantity'], 2, '.', '') ?></td>
                     <td class="text-muted note-cell" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($m['note'] ?? '') ?></td>
                     <td class="no-print-col">
                         <?php if ($isAuto): ?>
