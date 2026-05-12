@@ -106,6 +106,7 @@ function submitForm(form) {
     })
     .catch(function() {
         showFormError('Помилка з\'єднання');
+        console.log(formData);
     });
 }
 
