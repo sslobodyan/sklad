@@ -18,6 +18,7 @@ session_set_cookie_params([
     'httponly' => true,
     'samesite' => $secure ? 'None' : 'Lax',
 ]);
+date_default_timezone_set('Europe/Kyiv');
 session_start();
 define('ROOT_PATH', __DIR__);
 define('BASE_PATH', rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'));
