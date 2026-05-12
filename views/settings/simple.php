@@ -29,7 +29,7 @@ $selectedMaterialIds = $currentMaterials ?? [];
         </div>
         
         <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Доступні матеріали
+            <label class="form-label">Матеріали
                 <?php if (!empty($selectedMaterialIds)): ?>
                 <span style="font-weight:400;color:var(--blue)">(<?= count($selectedMaterialIds) ?>)</span>
                 <?php endif; ?>
@@ -38,7 +38,7 @@ $selectedMaterialIds = $currentMaterials ?? [];
                 <span><?= empty($selectedMaterialIds) ? 'Усі матеріали' : count($selectedMaterialIds) . ' обрано' ?></span>
                 <svg width="10" height="10" viewBox="0 0 10 10"><path fill="currentColor" d="M5 7L1 3h8z"/></svg>
             </button>
-            <input type="hidden" name="simple_materials[]" id="materialFilterValue" value="<?= htmlspecialchars(implode(',', $selectedMaterialIds)) ?>">
+            <input type="hidden" name="simple_materials" id="materialFilterValue" value="<?= htmlspecialchars(implode(',', $selectedMaterialIds)) ?>">
         </div>
         
         <div class="form-group filter-action-inline" style="margin-bottom:0">
@@ -55,7 +55,7 @@ $selectedMaterialIds = $currentMaterials ?? [];
 </div>
 
 <?php if ($currentWarehouse): ?>
-<div class="card" style="max-width: 600px; margin-top: 16px; padding:20px;">
+<div class="card" style="max-width: 600px; margin-top: 16px;padding: 20px;">
     <h3 style="margin-bottom: 12px;">🔗 Посилання для заправника</h3>
     <p style="margin-bottom: 12px; color: var(--text-secondary);">
         Надішліть це посилання заправнику. Він зможе працювати тільки з цією спрощеною сторінкою.

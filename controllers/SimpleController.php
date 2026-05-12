@@ -21,6 +21,9 @@ class SimpleController extends Controller
 
     public function index(): void
     {
+        // Встановлюємо часовий пояс України
+        date_default_timezone_set('Europe/Kiev');
+        
         $simpleWarehouseId = $this->getSimpleWarehouseId();
         
         if (!$simpleWarehouseId) {

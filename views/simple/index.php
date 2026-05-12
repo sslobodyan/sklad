@@ -259,12 +259,12 @@
 
 <div class="card">
     <div class="form-group">
-        <label for="date">📅 Дата</label>
+        <label for="date"><h3>📅 Дата</h3></label>
         <input type="date" id="date" value="<?= htmlspecialchars($date) ?>">
     </div>
     
     <div class="form-group">
-        <label for="material">📦 Матеріал</label>
+        <label for="material"><h3>📦 Матеріал</h3></label>
         <select id="material">
             <option value="">— Усі матеріали —</option>
             <?php foreach ($materials as $m): ?>
@@ -293,7 +293,7 @@
         <div class="form-group">
             <label for="targetWarehouse">Куди видати</label>
             <select id="targetWarehouse">
-                <option value="">— Оберіть склад —</option>
+                <option value="">— Оберіть куди —</option>
                 <?php 
                 if (empty($otherWarehouses)): 
                 ?>
@@ -427,7 +427,7 @@
         data.forEach(function(row) {
             html += '<tr>' +
                 '<td class="material-name">' + escapeHtml(row.material_name) + '</td>' +
-                '<td class="text-right num">' + formatNum(row.balance) + '</td>' +
+                '<td class="text-right num"><h3>' + formatNum(row.balance) + '</h3></td>' +
                 '</tr>';
         });
         
@@ -444,15 +444,15 @@
         }
         
         let html = '<table class="data-table">';
-        html += '<thead><tr><th><h2>Рух</h2></th><th>Склад</th><th class="text-right num">Надійшло</th><th class="text-right num">Вибуло</th></tr></thead>';
+        html += '<thead><tr><th><h2>Рух</h2></th><th> </th><th class="text-right num">Надійшло</th><th class="text-right num">Видано</th></tr></thead>';
         html += '<tbody>';
         
         data.forEach(function(row) {
             html += '<tr>' +
                 '<td class="material-name">' + escapeHtml(row.material_name) + '</td>' +
                 '<td>' + escapeHtml(row.correspondent) + '</td>' +
-                '<td class="text-right num">' + (row.incoming > 0 ? formatNum(row.incoming) : '—') + '</td>' +
-                '<td class="text-right num">' + (row.outgoing > 0 ? formatNum(row.outgoing) : '—') + '</td>' +
+                '<td class="text-right num"><h3>' + (row.incoming > 0 ? '+' + formatNum(row.incoming) : ' ') + '</h3></td>' +
+                '<td class="text-right num"><h3>' + (row.outgoing > 0 ? '-' + formatNum(row.outgoing) : ' ') + '</h3></td>' +
                 '</tr>';
         });
         
@@ -475,7 +475,7 @@
         data.forEach(function(row) {
             html += '<tr class="balance-row">' +
                 '<td class="material-name">' + escapeHtml(row.material_name) + '</td>' +
-                '<td class="text-right num">' + formatNum(row.balance) + '</td>' +
+                '<td class="text-right num"><h3>' + formatNum(row.balance) + '</h3></td>' +
                 '</tr>';
         });
         
@@ -485,7 +485,10 @@
     
     function formatNum(n) {
         if (n == 0) return '0';
-        var s = n.toFixed(2).replace(/\.?0+$/, '');
+        var s = "";
+        //if (n > 0) s = '+';
+        //if (n < 0) s = '-';
+        s += n.toFixed(2).replace(/\.?0+$/, '');
         return s;
     }
     

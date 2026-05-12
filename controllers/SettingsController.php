@@ -174,16 +174,19 @@ class SettingsController extends Controller
         $config = new ConfigModel($this->db);
         
         $warehouseId = (int)$this->post('simple_warehouse') ?: null;
-        $materialIds = $this->post('simple_materials') ?: [];
         
-        if (!is_array($materialIds)) {
-            $materialIds = [];
+        // Парсимо comma-separated рядок у масив
+        $materialIdsRaw = $this->post('simple_materials');
+        $materialIds = [];
+        if (!empty($materialIdsRaw)) {
+            $materialIds = array_map('intval', explode(',', $materialIdsRaw));
         }
         
         $config->setSimpleWarehouse($warehouseId);
         $config->setSimpleMaterials($materialIds);
 
-        $this->flash('success', 'Налаштування заправки збережено');
+        //$this->flash('success', 'Налаштування заправки збережено '.$materialIds);
+        $this->flash('success', 'Збережено '.implode(", ", $materialIds));
         $this->redirect('/settings/simple');
     }
 
