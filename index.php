@@ -9,6 +9,7 @@
 // Дозвіл вбудовування у iframe (Nextcloud External Sites або NC App)
 header('X-Frame-Options: ALLOWALL');
 header('Content-Security-Policy: frame-ancestors *');
+
 // Налаштування сесії для роботи в iframe (Nextcloud)
 $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
 session_set_cookie_params([
@@ -18,12 +19,13 @@ session_set_cookie_params([
     'httponly' => true,
     'samesite' => $secure ? 'None' : 'Lax',
 ]);
+
 date_default_timezone_set('Europe/Kyiv');
 
-
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// Розкоментувати для налагодження
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
 
 session_start();
 define('ROOT_PATH', __DIR__);
@@ -37,6 +39,7 @@ $ncGroups = $_GET['nc_groups'] ?? null;
 $ncName = $_GET['nc_name'] ?? null;
 $ncTs = $_GET['nc_ts'] ?? null;
 $ncSig = $_GET['nc_sig'] ?? null;
+
 if ($ncUser !== null && $ncSig !== null) {
     // Завантажити секрет
     $authConfig = [];
@@ -46,6 +49,7 @@ if ($ncUser !== null && $ncSig !== null) {
     }
     $secret = $authConfig['secret'] ?? '';
     $maxAge = $authConfig['max_age'] ?? 3600;
+    
     // Перевірити підпис
     $expectedSig = hash_hmac('sha256', $ncUser . '|' . $ncGroups . '|' . $ncTs, $secret);
     if ($secret && hash_equals($expectedSig, $ncSig) && (time() - (int)$ncTs) < $maxAge) {
@@ -53,6 +57,7 @@ if ($ncUser !== null && $ncSig !== null) {
         $_SESSION['nc_user'] = $ncUser;
         $_SESSION['nc_display_name'] = $ncName;
         $_SESSION['nc_groups'] = $ncGroups ? explode(',', $ncGroups) : [];
+        
         // Визначити БД за групою
         $dbConfigFile = ROOT_PATH . '/config/databases.php';
         if (file_exists($dbConfigFile)) {
@@ -80,7 +85,7 @@ define('NC_DB_GROUP', $_SESSION['nc_db_group'] ?? 'default');
 
 // Автозавантаження класів
 spl_autoload_register(function ($class) {
-    $dirs = ['core', 'models', 'controllers'];
+    $dirs = ['core', 'models', 'controllers', 'helpers'];
     foreach ($dirs as $dir) {
         $file = ROOT_PATH . '/' . $dir . '/' . $class . '.php';
         if (file_exists($file)) {
@@ -105,17 +110,34 @@ $requestUri = $_SERVER['REQUEST_URI'];
 $route = parse_url($requestUri, PHP_URL_PATH);
 $route = substr($route, strlen(BASE_PATH));
 $route = trim($route, '/');
+
+// Якщо порожній маршрут — редірект на movements
 if (empty($route)) {
-    $route = 'movements';
+    header('Location: ' . BASE_PATH . '/movements');
+    exit;
 }
 
-// Розбір маршруту
-$parts = explode('/', $route);
-$controllerName = ucfirst($parts[0]) . 'Controller';
-$action = $parts[1] ?? 'index';
-$id = $parts[2] ?? null;
+// =============================================
+// Спеціальні маршрути (для експорту та імпорту)
+// =============================================
+$specialRoutes = [
+    'movements/import' => ['controller' => 'MovementsImport', 'action' => 'import'],
+    'movements/export' => ['controller' => 'MovementsExport', 'action' => 'export'],
+];
 
-// Перевірка контролера
+if (isset($specialRoutes[$route])) {
+    $controllerName = $specialRoutes[$route]['controller'] . 'Controller';
+    $action = $specialRoutes[$route]['action'];
+    $id = null;
+} else {
+    // Стандартний розбір маршруту
+    $parts = explode('/', $route);
+    $controllerName = ucfirst($parts[0]) . 'Controller';
+    $action = $parts[1] ?? 'index';
+    $id = $parts[2] ?? null;
+}
+
+// Перевірка існування контролера
 $controllerFile = ROOT_PATH . '/controllers/' . $controllerName . '.php';
 if (!file_exists($controllerFile)) {
     http_response_code(404);
@@ -126,24 +148,34 @@ if (!file_exists($controllerFile)) {
 // Виконання
 try {
     $controller = new $controllerName($db);
+    
     if (!method_exists($controller, $action)) {
         http_response_code(404);
         require ROOT_PATH . '/views/errors/404.php';
         exit;
     }
-    $controller->$action($id);
+    
+    // Викликаємо метод з ID (якщо є)
+    if ($id !== null) {
+        $controller->$action($id);
+    } else {
+        $controller->$action();
+    }
 } catch (Exception $e) {
     http_response_code(500);
     echo '<h1>Помилка сервера</h1><p>' . htmlspecialchars($e->getMessage()) . '</p>';
+    to_log('Помилка виконання', ['error' => $e->getMessage(), 'route' => $route]);
 }
 
-
+// =============================================
+// Функція для логування
+// =============================================
 function to_log($message, $data = null) {
     $file = __DIR__ . '/debug.log';
     $time = date('Y-m-d H:i:s');
     
     // Форматуємо повідомлення
-    $output = "[$time] $message".'  ';
+    $output = "[$time] $message  ";
     if ($data !== null) {
         $output .= print_r($data, true);
     }
