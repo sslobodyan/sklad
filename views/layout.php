@@ -249,7 +249,28 @@
         <div class="modal-body" id="modalBody"></div>
     </div>
 
-    <script src="<?= $basePath ?>/assets/js/app.js"></script>
+	<!-- Core -->
+	<script src="<?= $basePath ?>/assets/js/core/utils.js"></script>
+	<script src="<?= $basePath ?>/assets/js/core/sidebar.js"></script>
+	<script src="<?= $basePath ?>/assets/js/core/date-panel.js"></script>
+	<script src="<?= $basePath ?>/assets/js/core/modal.js"></script>
+	<script src="<?= $basePath ?>/assets/js/core/ajax.js"></script>
+
+	<!-- Components -->
+	<script src="<?= $basePath ?>/assets/js/components/autocomplete.js"></script>
+	<script src="<?= $basePath ?>/assets/js/components/type-indicator.js"></script>
+
+	<!-- Modals -->
+	<script src="<?= $basePath ?>/assets/js/modals/warehouse.js"></script>
+	<script src="<?= $basePath ?>/assets/js/modals/material.js"></script>
+	<script src="<?= $basePath ?>/assets/js/modals/movement.js"></script>
+	<script src="<?= $basePath ?>/assets/js/modals/delete.js"></script>
+	<script src="<?= $basePath ?>/assets/js/modals/import.js"></script>
+
+	<!-- Main -->
+	<script src="<?= $basePath ?>/assets/js/main.js"></script>
+
+
     <script>
         (function() {
             var container = document.getElementById('flashContainer');
@@ -282,3 +303,4 @@
     </script>
 </body>
 </html>
+[1;5H
