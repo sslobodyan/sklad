@@ -637,16 +637,32 @@ class ResourceModel extends Model
     }
 
     /**
-     * Звіт про витрачання ресурсів
+     * Детальний звіт про витрачання ресурсів.
+     *
+     * Повертає масив по складах, кожен склад містить:
+     *   - інфо складу
+     *   - resource_type: формат, одиниця
+     *   - materials[matId]:
+     *       name, rate, opening_balance, received, rows[], closing_balance
+     *     де rows[] — рядки деталізації (один resource_log = один рядок):
+     *       log_id, log_date, reading, delta, correction_pct, consumed, note
      */
-    public function getResourceUsageReport(string $dateFrom, string $dateTo, array $warehouseIds, int $resourceTypeId): array
-    {
+    public function getResourceUsageReportDetailed(
+        string $dateFrom,
+        string $dateTo,
+        array $warehouseIds,
+        int $resourceTypeId
+    ): array {
         $db = $this->db;
-        
-        // Якщо склади не вибрані — беремо всі склади з цим типом ресурсу
-        // Якщо вибрані — тільки вибрані склади
+
+        // Тип ресурсу
+        $type = $this->getTypeById($resourceTypeId);
+        if (!$type) return [];
+        $fmt = $type['format'] ?? 'dec2';
+        $unit = $type['unit'] ?? '';
+
+        // Склади
         if (empty($warehouseIds)) {
-            // Всі склади з цим типом ресурсу
             $warehouses = $db->query(
                 "SELECT w.id, w.name
                  FROM warehouse_resources wr
@@ -656,13 +672,12 @@ class ResourceModel extends Model
                 [$resourceTypeId]
             )->fetchAll();
         } else {
-            // Тільки вибрані склади
-            $whClause = "wr.warehouse_id IN (" . implode(',', array_fill(0, count($warehouseIds), '?')) . ")";
+            $ph = implode(',', array_fill(0, count($warehouseIds), '?'));
             $warehouses = $db->query(
                 "SELECT w.id, w.name
                  FROM warehouse_resources wr
                  JOIN warehouses w ON wr.warehouse_id = w.id
-                 WHERE wr.resource_type_id = ? AND {$whClause}
+                 WHERE wr.resource_type_id = ? AND wr.warehouse_id IN ({$ph})
                  ORDER BY w.name",
                 array_merge([$resourceTypeId], $warehouseIds)
             )->fetchAll();
@@ -672,88 +687,167 @@ class ResourceModel extends Model
 
         foreach ($warehouses as $wh) {
             $whId = (int)$wh['id'];
-            
-            // Попередній показник (останній перед dateFrom)
-            $prevReading = $db->query(
+
+            // Норми для цього складу+ресурсу
+            $rates = $this->getRates($whId, $resourceTypeId);
+            if (empty($rates)) continue;
+
+            // resource_logs у діапазоні дат (для деталізації)
+            $logs = $db->query(
+                "SELECT id, log_date, reading, prev_reading, delta, correction_pct, note
+                 FROM resource_logs
+                 WHERE warehouse_id = ? AND resource_type_id = ?
+                   AND log_date >= ? AND log_date <= ?
+                   AND delta IS NOT NULL AND delta > 0
+                 ORDER BY log_date ASC, id ASC",
+                [$whId, $resourceTypeId, $dateFrom, $dateTo]
+            )->fetchAll();
+
+            // Перший показник у діапазоні (для відображення вхідного показника)
+            $openingLog = $db->query(
                 "SELECT reading FROM resource_logs
                  WHERE warehouse_id = ? AND resource_type_id = ? AND log_date < ?
                  ORDER BY log_date DESC, id DESC LIMIT 1",
                 [$whId, $resourceTypeId, $dateFrom]
             )->fetch();
-            $openingReading = $prevReading ? (float)$prevReading['reading'] : 0;
+            $openingReading = $openingLog ? (float)$openingLog['reading'] : null;
 
             // Поточний показник (останній <= dateTo)
-            $currentReading = $db->query(
+            $lastLog = $db->query(
                 "SELECT reading FROM resource_logs
                  WHERE warehouse_id = ? AND resource_type_id = ? AND log_date <= ?
                  ORDER BY log_date DESC, id DESC LIMIT 1",
                 [$whId, $resourceTypeId, $dateTo]
             )->fetch();
-            $currentValue = $currentReading ? (float)$currentReading['reading'] : 0;
+            $closingReading = $lastLog ? (float)$lastLog['reading'] : null;
 
-            // Дельта ресурсу
-            $resourceDelta = $currentValue - $openingReading;
-
-            // Отримуємо норми для цього складу+ресурсу
-            $rates = $this->getRates($whId, $resourceTypeId);
-
-            // Отримуємо рухи матеріалів за період
-            $whPlaceholder = !empty($warehouseIds) 
-                ? "AND warehouse_to_id IN (" . implode(',', array_fill(0, count($warehouseIds), '?')) . ")"
-                : "";
-            $whMovementsParams = !empty($warehouseIds) ? $warehouseIds : [];
-
-            $movements = $db->query(
-                "SELECT material_id, warehouse_to_id, SUM(quantity) as received
-                 FROM movements
-                 WHERE movement_date >= ? AND movement_date <= ?
-                 AND warehouse_from_id IS NULL
-                 AND warehouse_to_id = ?
-                 {$whPlaceholder}
-                 GROUP BY material_id, warehouse_to_id",
-                array_merge([$dateFrom, $dateTo, $whId], $whMovementsParams)
-            )->fetchAll();
-
-            $receivedByMaterial = [];
-            foreach ($movements as $m) {
-                $receivedByMaterial[(int)$m['material_id']] = (float)$m['received'];
+            // Загальна дельта за період
+            $totalDelta = 0;
+            foreach ($logs as $l) {
+                $totalDelta += (float)$l['delta'];
             }
 
-            // Розрахунок по кожному матеріалу
+            // Для кожного матеріалу будуємо деталізацію
             $materials = [];
+
             foreach ($rates as $rate) {
                 $matId = (int)$rate['material_id'];
                 $rateValue = (float)$rate['rate'];
-                $correctionPct = 0; // TODO: отримати з resource_logs
 
-                // Списано = дельта * норма * (1 + поправка)
-                $consumed = $resourceDelta * $rateValue * (1 + $correctionPct / 100);
-                
-                // Залишок = надійшло - списано
-                $received = $receivedByMaterial[$matId] ?? 0;
-                $balance = $received - $consumed;
+                // Залишок на початок = надійшло до dateFrom − списано до dateFrom
+                $receivedBefore = (float)($db->query(
+                    "SELECT COALESCE(SUM(quantity), 0) AS s
+                     FROM movements
+                     WHERE material_id = ? AND warehouse_to_id = ? AND warehouse_from_id IS NULL
+                       AND movement_date < ?",
+                    [$matId, $whId, $dateFrom]
+                )->fetch()['s'] ?? 0);
+
+                $consumedBefore = (float)($db->query(
+                    "SELECT COALESCE(SUM(quantity), 0) AS s
+                     FROM movements
+                     WHERE material_id = ? AND warehouse_from_id = ? AND resource_log_id IS NOT NULL
+                       AND movement_date < ?",
+                    [$matId, $whId, $dateFrom]
+                )->fetch()['s'] ?? 0);
+
+                // Також враховуємо ручні списання зі складу (не ресурсні)
+                $consumedManualBefore = (float)($db->query(
+                    "SELECT COALESCE(SUM(quantity), 0) AS s
+                     FROM movements
+                     WHERE material_id = ? AND warehouse_from_id = ? AND resource_log_id IS NULL
+                       AND movement_date < ?",
+                    [$matId, $whId, $dateFrom]
+                )->fetch()['s'] ?? 0);
+
+                $openingBalance = $receivedBefore - $consumedBefore - $consumedManualBefore;
+
+                // Надходження за період (прихід ззовні на цей склад)
+                $receivedPeriod = (float)($db->query(
+                    "SELECT COALESCE(SUM(quantity), 0) AS s
+                     FROM movements
+                     WHERE material_id = ? AND warehouse_to_id = ? AND warehouse_from_id IS NULL
+                       AND movement_date >= ? AND movement_date <= ?",
+                    [$matId, $whId, $dateFrom, $dateTo]
+                )->fetch()['s'] ?? 0);
+
+                // Рядки деталізації по кожному resource_log
+                $rows = [];
+                $totalConsumed = 0;
+
+                foreach ($logs as $l) {
+                    $logId = (int)$l['id'];
+                    $delta = (float)$l['delta'];
+                    $corrPct = (float)($l['correction_pct'] ?? 0);
+                    $corrMul = 1 + $corrPct / 100;
+
+                    // Списана кількість = підсумок всіх рухів цього log_id для цього матеріалу
+                    $consumedRow = (float)($db->query(
+                        "SELECT COALESCE(SUM(quantity), 0) AS s
+                         FROM movements
+                         WHERE resource_log_id = ? AND material_id = ? AND warehouse_from_id = ?",
+                        [$logId, $matId, $whId]
+                    )->fetch()['s'] ?? 0);
+
+                    // Якщо рух є — додаємо рядок
+                    if ($consumedRow > 0 || ($delta > 0 && $rateValue > 0)) {
+                        // Якщо рух відсутній але норма є — розраховуємо теоретично
+                        $consumedCalc = $consumedRow > 0 ? $consumedRow : round($delta * $rateValue * $corrMul, 2);
+
+                        $rows[] = [
+                            'log_id'        => $logId,
+                            'log_date'      => $l['log_date'],
+                            'reading'       => (float)$l['reading'],
+                            'prev_reading'  => $l['prev_reading'] !== null ? (float)$l['prev_reading'] : null,
+                            'delta'         => $delta,
+                            'rate'          => $rateValue,
+                            'correction_pct' => $corrPct,
+                            'consumed'      => $consumedCalc,
+                            'note'          => $l['note'] ?? '',
+                        ];
+                        $totalConsumed += $consumedCalc;
+                    }
+                }
+
+                // Якщо немає рядків — пропускаємо матеріал
+                if (empty($rows) && $openingBalance == 0 && $receivedPeriod == 0) continue;
+
+                $closingBalance = $openingBalance + $receivedPeriod - $totalConsumed;
 
                 $materials[$matId] = [
-                    'name' => $rate['material_name'],
-                    'received' => $received,
-                    'rate' => $rateValue,
-                    'correction' => $correctionPct,
-                    'consumed' => $consumed,
-                    'balance' => $balance
+                    'name'             => $rate['material_name'],
+                    'rate'             => $rateValue,
+                    'opening_balance'  => $openingBalance,
+                    'received'         => $receivedPeriod,
+                    'consumed_total'   => $totalConsumed,
+                    'closing_balance'  => $closingBalance,
+                    'rows'             => $rows,
                 ];
             }
 
+            if (empty($materials)) continue;
+
             $report[] = [
-                'warehouse_id' => $whId,
-                'warehouse_name' => $wh['name'],
+                'warehouse_id'    => $whId,
+                'warehouse_name'  => $wh['name'],
                 'opening_reading' => $openingReading,
-                'current_reading' => $currentValue,
-                'resource_delta' => $resourceDelta,
-                'materials' => $materials
+                'closing_reading' => $closingReading,
+                'total_delta'     => $totalDelta,
+                'resource_unit'   => $unit,
+                'resource_format' => $fmt,
+                'materials'       => $materials,
             ];
         }
 
         return $report;
+    }
+
+    /**
+     * Звіт про витрачання ресурсів (старий, зберігаємо для сумісності)
+     */
+    public function getResourceUsageReport(string $dateFrom, string $dateTo, array $warehouseIds, int $resourceTypeId): array
+    {
+        return $this->getResourceUsageReportDetailed($dateFrom, $dateTo, $warehouseIds, $resourceTypeId);
     }
 
 }
