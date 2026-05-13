@@ -74,6 +74,8 @@
                     <tr style="border: 1px solid #ddd;">
                         <th style="border: 1px solid #ddd; padding: 10px;">Матеріал / Склад / Дата</th>
                         <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Δ ресурсу</th>
+                        <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Норма</th>
+                        <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Поправка</th>
                         <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Вх.сальдо</th>
                         <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Прихід</th>
                         <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Витрата</th>
@@ -89,6 +91,8 @@
                                 <strong><?= htmlspecialchars($material['material_name']) ?></strong>
                             </td>
                             <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;"><strong><?= number_format($material['total_delta'], 2) ?></strong></td>
+                            <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;">—</td>
+                            <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;">—</td>
                             <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;"><strong><?= number_format($material['total_opening'], 2) ?></strong></td>
                             <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;"><strong><?= number_format($material['total_incoming'], 2) ?></strong></td>
                             <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;"><strong><?= number_format($material['total_consumed'], 2) ?></strong></td>
@@ -97,7 +101,7 @@
                         
                         <!-- Дочірні групи - склади -->
                         <tr class="detail-group" id="material-<?= $material['material_id'] ?>" style="display: none;">
-                            <td colspan="6" style="padding: 0; border: none;">
+                            <td colspan="8" style="padding: 0; border: none;">
                                 <table style="width: 100%; border-collapse: collapse;">
                                     <?php foreach ($material['warehouses'] as $warehouse): ?>
                                         <tbody>
@@ -108,6 +112,8 @@
                                                     <strong><?= htmlspecialchars($warehouse['warehouse_name']) ?></strong>
                                                 </td>
                                                 <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;"><?= number_format($warehouse['total_delta'], 2) ?></td>
+                                                <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;">—</td>
+                                                <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;">—</td>
                                                 <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;"><?= number_format($warehouse['opening_balance'], 2) ?></td>
                                                 <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;"><?= number_format($warehouse['total_incoming'], 2) ?></td>
                                                 <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;"><?= number_format($warehouse['total_consumed'], 2) ?></td>
@@ -121,21 +127,19 @@
                                                 <tr class="detail-row" style="border: 1px solid #ddd;">
                                                     <td class="detail-cell" style="border: 1px solid #ddd; padding: 8px; background: #fff;">
                                                         <?= date('d.m.Y', strtotime($row['date'])) ?>
-                                                        <?php if ($row['type'] == 'incoming'): ?>
-                                                            <span style="font-size: 0.7em; padding: 2px 6px; border-radius: 4px; margin-left: 8px; background: #e8f5e9; color: #2e7d32;">📥 Надходження</span>
-                                                        <?php elseif ($row['type'] == 'outgoing' && $row['has_manual']): ?>
+                                                        <?php if ($row['has_manual']): ?>
                                                             <span style="font-size: 0.7em; padding: 2px 6px; border-radius: 4px; margin-left: 8px; background: #fff3e0; color: #f57c00;">⚠️ Ручне списання</span>
-                                                        <?php elseif ($row['type'] == 'resource_log'): ?>
-                                                            <span style="font-size: 0.7em; padding: 2px 6px; border-radius: 4px; margin-left: 8px; background: #e3f2fd; color: #1565c0;">📊 За нормою</span>
                                                         <?php endif; ?>
                                                         <?php if (!empty($row['note'])): ?>
                                                             <span style="font-size: 0.85em; color: #888; margin-left: 8px;"><?= htmlspecialchars($row['note']) ?></span>
                                                         <?php endif; ?>
                                                     </td>
                                                     <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff;"><?= $row['delta'] ?></td>
+                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff;"><?= $row['rate'] ?></td>
+                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff;"><?= $row['correction_pct'] ?></td>
                                                     <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff;"><?= number_format($row['opening_balance'], 2) ?></td>
-                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff; color: #2e7d32;"><?= number_format($row['incoming'], 2) ?></td>
-                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff; <?= $row['has_manual'] ? 'color: #f57c00; font-weight: bold;' : 'color: #c62828;' ?>"><?= number_format($row['consumed'], 2) ?></td>
+                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff;"><?= $row['incoming'] ?></td>
+                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff; <?= $row['has_manual'] ? 'color: #f57c00; font-weight: bold;' : '' ?>"><?= $row['consumed'] ?></td>
                                                     <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff; font-weight: bold;"><?= number_format($row['closing_balance'], 2) ?></td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -150,6 +154,8 @@
                     <tr style="border: 1px solid #ddd; background: #e8f0fe;">
                         <th style="border: 1px solid #ddd; padding: 10px;">Загальний підсумок</th>
                         <th class="text-right" style="border: 1px solid #ddd; padding: 10px;"><?= number_format($totalDelta, 2) ?></th>
+                        <th class="text-right" style="border: 1px solid #ddd; padding: 10px;">—</th>
+                        <th class="text-right" style="border: 1px solid #ddd; padding: 10px;">—</th>
                         <th class="text-right" style="border: 1px solid #ddd; padding: 10px;"><?= number_format($totalOpening, 2) ?></th>
                         <th class="text-right" style="border: 1px solid #ddd; padding: 10px;"><?= number_format($totalIncoming, 2) ?></th>
                         <th class="text-right" style="border: 1px solid #ddd; padding: 10px;"><?= number_format($totalConsumed, 2) ?></th>
