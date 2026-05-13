@@ -1526,3 +1526,20 @@ a:hover { text-decoration: underline; }
         background: none !important;
     }
 }
+
+.manual-warning {
+    background-color: #fff3e0 !important;
+    border-left: 3px solid #f57c00;
+}
+.manual-outgoing {
+    color: #f57c00 !important;
+    font-weight: bold;
+}
+.manual-badge {
+    font-size: 0.8em;
+    color: #f57c00;
+    background: #fff3e0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+}

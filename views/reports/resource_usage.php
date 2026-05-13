@@ -34,7 +34,6 @@
     </div>
 </div>
 
-<!-- Фільтри -->
 <div class="card filter-panel">
     <form method="GET" class="filter-grid filter-grid-with-action">
         <div class="form-group" style="margin-bottom:0">
@@ -65,77 +64,96 @@
 
 <?php if ($resourceTypeId > 0 && !empty($reportData)): ?>
     <div class="card">
-        <div class="table-scroll">
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th>Матеріал / Склад</th>
-                        <th class="text-right">Δ ресурсу</th>
-                        <th class="text-right">Вх.сальдо</th>
-                        <th class="text-right">Надходження</th>
-                        <th class="text-right">Списано</th>
-                        <th class="text-right">Вих.сальдо</th>
+        <div class="table-toolbar">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="expandAll()">▼ Все розгорнути</button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="collapseAll()">▶ Все згорнути</button>
+        </div>
+        <div class="table-scroll" style="max-height: 70vh; overflow-y: auto;">
+            <table class="report-table" style="border-collapse: collapse; width: 100%;">
+                <thead style="position: sticky; top: 0; background: #f5f5f5; z-index: 10;">
+                    <tr style="border: 1px solid #ddd;">
+                        <th style="border: 1px solid #ddd; padding: 10px;">Матеріал / Склад / Дата</th>
+                        <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Δ ресурсу</th>
+                        <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Вх.сальдо</th>
+                        <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Прихід</th>
+                        <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Витрата</th>
+                        <th style="border: 1px solid #ddd; padding: 10px;" class="text-right">Вих.сальдо</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($reportData as $material): ?>
                         <!-- Група матеріалу -->
-                        <tr class="group-row" data-level="material" data-target="material-<?= $material['material_id'] ?>">
-                            <td class="group-cell">
+                        <tr class="group-row" data-target="material-<?= $material['material_id'] ?>" style="border: 1px solid #ddd; cursor: pointer;">
+                            <td class="group-cell" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;">
                                 <span class="collapse-icon">▶</span>
                                 <strong><?= htmlspecialchars($material['material_name']) ?></strong>
                             </td>
-                            <td class="text-right"><?= number_format($material['total_delta'], 2) ?></td>
-                            <td class="text-right"><?= number_format($material['total_opening'], 2) ?></td>
-                            <td class="text-right"><?= number_format($material['total_incoming'], 2) ?></td>
-                            <td class="text-right"><?= number_format($material['total_consumed'], 2) ?></td>
-                            <td class="text-right"><?= number_format($material['total_closing'], 2) ?></td>
+                            <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;"><strong><?= number_format($material['total_delta'], 2) ?></strong></td>
+                            <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;"><strong><?= number_format($material['total_opening'], 2) ?></strong></td>
+                            <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;"><strong><?= number_format($material['total_incoming'], 2) ?></strong></td>
+                            <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;"><strong><?= number_format($material['total_consumed'], 2) ?></strong></td>
+                            <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;"><strong><?= number_format($material['total_closing'], 2) ?></strong></td>
                         </tr>
                         
                         <!-- Дочірні групи - склади -->
-                        <tbody class="detail-group" id="material-<?= $material['material_id'] ?>" style="display: none;">
-                            <?php foreach ($material['warehouses'] as $warehouse): ?>
-                                <tr class="group-row sub-group" data-level="warehouse" data-target="warehouse-<?= $material['material_id'] ?>-<?= $warehouse['warehouse_id'] ?>">
-                                    <td class="group-cell sub-cell">
-                                        <span class="collapse-icon">▶</span>
-                                        <span class="sub-indent">└─ </span>
-                                        <strong><?= htmlspecialchars($warehouse['warehouse_name']) ?></strong>
-                                    </td>
-                                    <td class="text-right"><?= number_format($warehouse['total_delta'], 2) ?></td>
-                                    <td class="text-right"><?= number_format($warehouse['opening_balance'], 2) ?></td>
-                                    <td class="text-right"><?= number_format($warehouse['total_incoming'], 2) ?></td>
-                                    <td class="text-right"><?= number_format($warehouse['total_consumed'], 2) ?></td>
-                                    <td class="text-right"><?= number_format($warehouse['closing_balance'], 2) ?></td>
-                                </tr>
-                                
-                                <!-- Деталізація по днях -->
-                                <tbody class="detail-group" id="warehouse-<?= $material['material_id'] ?>-<?= $warehouse['warehouse_id'] ?>" style="display: none;">
-                                    <?php foreach ($warehouse['rows'] as $row): ?>
-                                        <tr class="detail-row">
-                                            <td class="detail-cell">
-                                                <span class="detail-indent">└─ └─ </span>
-                                                <?= date('d.m.Y', strtotime($row['date'])) ?>
-                                            </td>
-                                            <td class="text-right"><?= $row['delta'] ?></td>
-                                            <td class="text-right"><?= number_format($row['opening_balance'], 2) ?></td>
-                                            <td class="text-right incoming"><?= number_format($row['incoming'], 2) ?></td>
-                                            <td class="text-right outgoing"><?= number_format($row['consumed'], 2) ?></td>
-                                            <td class="text-right"><?= number_format($row['closing_balance'], 2) ?></td>
-                                        </tr>
+                        <tr class="detail-group" id="material-<?= $material['material_id'] ?>" style="display: none;">
+                            <td colspan="6" style="padding: 0; border: none;">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <?php foreach ($material['warehouses'] as $warehouse): ?>
+                                        <tbody>
+                                            <!-- Заголовок складу -->
+                                            <tr class="group-row sub-group" data-target="warehouse-<?= $material['material_id'] ?>-<?= $warehouse['warehouse_id'] ?>" style="border: 1px solid #ddd; cursor: pointer;">
+                                                <td class="group-cell sub-cell" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;">
+                                                    <span class="collapse-icon">▶</span>
+                                                    <strong><?= htmlspecialchars($warehouse['warehouse_name']) ?></strong>
+                                                </td>
+                                                <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;"><?= number_format($warehouse['total_delta'], 2) ?></td>
+                                                <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;"><?= number_format($warehouse['opening_balance'], 2) ?></td>
+                                                <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;"><?= number_format($warehouse['total_incoming'], 2) ?></td>
+                                                <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;"><?= number_format($warehouse['total_consumed'], 2) ?></td>
+                                                <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;"><?= number_format($warehouse['closing_balance'], 2) ?></td>
+                                            </tr>
+                                        </tbody>
+                                        
+                                        <!-- Деталізація по днях -->
+                                        <tbody class="detail-group" id="warehouse-<?= $material['material_id'] ?>-<?= $warehouse['warehouse_id'] ?>" style="display: none;">
+                                            <?php foreach ($warehouse['rows'] as $row): ?>
+                                                <tr class="detail-row" style="border: 1px solid #ddd;">
+                                                    <td class="detail-cell" style="border: 1px solid #ddd; padding: 8px; background: #fff;">
+                                                        <?= date('d.m.Y', strtotime($row['date'])) ?>
+                                                        <?php if ($row['type'] == 'incoming'): ?>
+                                                            <span style="font-size: 0.7em; padding: 2px 6px; border-radius: 4px; margin-left: 8px; background: #e8f5e9; color: #2e7d32;">📥 Надходження</span>
+                                                        <?php elseif ($row['type'] == 'outgoing' && $row['has_manual']): ?>
+                                                            <span style="font-size: 0.7em; padding: 2px 6px; border-radius: 4px; margin-left: 8px; background: #fff3e0; color: #f57c00;">⚠️ Ручне списання</span>
+                                                        <?php elseif ($row['type'] == 'resource_log'): ?>
+                                                            <span style="font-size: 0.7em; padding: 2px 6px; border-radius: 4px; margin-left: 8px; background: #e3f2fd; color: #1565c0;">📊 За нормою</span>
+                                                        <?php endif; ?>
+                                                        <?php if (!empty($row['note'])): ?>
+                                                            <span style="font-size: 0.85em; color: #888; margin-left: 8px;"><?= htmlspecialchars($row['note']) ?></span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff;"><?= $row['delta'] ?></td>
+                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff;"><?= number_format($row['opening_balance'], 2) ?></td>
+                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff; color: #2e7d32;"><?= number_format($row['incoming'], 2) ?></td>
+                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff; <?= $row['has_manual'] ? 'color: #f57c00; font-weight: bold;' : 'color: #c62828;' ?>"><?= number_format($row['consumed'], 2) ?></td>
+                                                    <td class="text-right" style="border: 1px solid #ddd; padding: 8px; background: #fff; font-weight: bold;"><?= number_format($row['closing_balance'], 2) ?></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
                                     <?php endforeach; ?>
-                                </tbody>
-                            <?php endforeach; ?>
-                        </tbody>
+                                </table>
+                            </td>
+                        </tr>
                     <?php endforeach; ?>
                 </tbody>
                 <tfoot class="totals-footer">
-                    <tr>
-                        <th>Загальний підсумок</th>
-                        <th class="text-right"><?= number_format($totalDelta, 2) ?></th>
-                        <th class="text-right"><?= number_format($totalOpening, 2) ?></th>
-                        <th class="text-right"><?= number_format($totalIncoming, 2) ?></th>
-                        <th class="text-right"><?= number_format($totalConsumed, 2) ?></th>
-                        <th class="text-right"><?= number_format($totalClosing, 2) ?></th>
+                    <tr style="border: 1px solid #ddd; background: #e8f0fe;">
+                        <th style="border: 1px solid #ddd; padding: 10px;">Загальний підсумок</th>
+                        <th class="text-right" style="border: 1px solid #ddd; padding: 10px;"><?= number_format($totalDelta, 2) ?></th>
+                        <th class="text-right" style="border: 1px solid #ddd; padding: 10px;"><?= number_format($totalOpening, 2) ?></th>
+                        <th class="text-right" style="border: 1px solid #ddd; padding: 10px;"><?= number_format($totalIncoming, 2) ?></th>
+                        <th class="text-right" style="border: 1px solid #ddd; padding: 10px;"><?= number_format($totalConsumed, 2) ?></th>
+                        <th class="text-right" style="border: 1px solid #ddd; padding: 10px;"><?= number_format($totalClosing, 2) ?></th>
                     </tr>
                 </tfoot>
             </table>
@@ -164,19 +182,36 @@
 <?php endif; ?>
 
 <script>
-// Групування як у звіті по складу
+function expandAll() {
+    document.querySelectorAll('.detail-group').forEach(function(el) {
+        el.style.display = '';
+    });
+    document.querySelectorAll('.collapse-icon').forEach(function(icon) {
+        icon.textContent = '▼';
+    });
+}
+
+function collapseAll() {
+    document.querySelectorAll('.detail-group').forEach(function(el) {
+        el.style.display = 'none';
+    });
+    document.querySelectorAll('.collapse-icon').forEach(function(icon) {
+        icon.textContent = '▶';
+    });
+}
+
 document.querySelectorAll('.group-row').forEach(function(row) {
     var icon = row.querySelector('.collapse-icon');
     if (!icon) return;
     
+    var targetId = row.dataset.target;
+    if (!targetId) return;
+    
+    var target = document.getElementById(targetId);
+    if (!target) return;
+    
     row.addEventListener('click', function(e) {
         e.stopPropagation();
-        var targetId = this.dataset.target;
-        if (!targetId) return;
-        
-        var target = document.getElementById(targetId);
-        if (!target) return;
-        
         if (target.style.display === 'none') {
             target.style.display = '';
             icon.textContent = '▼';
@@ -187,3 +222,42 @@ document.querySelectorAll('.group-row').forEach(function(row) {
     });
 });
 </script>
+
+<style>
+.table-toolbar {
+    margin-bottom: 10px;
+    display: flex;
+    gap: 10px;
+}
+.table-scroll {
+    max-height: 70vh;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.report-table th {
+    position: sticky;
+    top: 0;
+    background: #f5f5f5;
+    z-index: 10;
+}
+.group-row {
+    cursor: pointer;
+}
+.group-row:hover {
+    opacity: 0.9;
+}
+.group-cell .collapse-icon {
+    display: inline-block;
+    width: 16px;
+    font-size: 12px;
+    margin-right: 6px;
+}
+.text-right {
+    text-align: right;
+}
+</style>

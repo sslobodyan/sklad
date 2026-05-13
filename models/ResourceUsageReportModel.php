@@ -14,50 +14,20 @@ class ResourceUsageReportModel extends Model
 
     public function getDetailedReport(int $resourceTypeId, array $warehouseIds, string $dateFrom, string $dateTo): array
     {
-
-
-    to_log('=== ResourceUsageReportModel::getDetailedReport ===');
-    to_log('resourceTypeId: ' . $resourceTypeId);
-    to_log('warehouseIds: ' . json_encode($warehouseIds));
-    to_log('dateFrom: ' . $dateFrom);
-    to_log('dateTo: ' . $dateTo);
-    
-    // Перевіряємо чи є resource_logs взагалі
-    $allLogs = $this->db->query(
-        "SELECT COUNT(*) as cnt FROM resource_logs"
-    )->fetch();
-    to_log('total resource_logs in DB: ' . ($allLogs['cnt'] ?? 0));
-    
-    // Перевіряємо конкретний запит
-    if (!empty($warehouseIds)) {
-        $placeholders = implode(',', array_fill(0, count($warehouseIds), '?'));
-        $params = array_merge([$resourceTypeId, $dateFrom, $dateTo], $warehouseIds);
+        to_log('=== ResourceUsageReportModel::getDetailedReport ===');
+        to_log('resourceTypeId: ' . $resourceTypeId);
+        to_log('warehouseIds: ' . json_encode($warehouseIds));
+        to_log('dateFrom: ' . $dateFrom);
+        to_log('dateTo: ' . $dateTo);
         
-        $testLogs = $this->db->query(
-            "SELECT rl.*, rt.format, rt.unit
-             FROM resource_logs rl
-             JOIN resource_types rt ON rl.resource_type_id = rt.id
-             WHERE rl.resource_type_id = ? 
-               AND rl.log_date >= ? 
-               AND rl.log_date <= ?
-               AND rl.warehouse_id IN ($placeholders)
-               AND rl.delta IS NOT NULL
-             LIMIT 5",
-            $params
-        )->fetchAll();
-        
-        to_log('test logs query result count: ' . count($testLogs));
-        if (!empty($testLogs)) {
-            to_log('first log: ' . json_encode($testLogs[0]));
-        }
-    }
-
-
         $report = [];
         
         foreach ($warehouseIds as $warehouseId) {
-            // Отримуємо норми для складу та типу ресурсу
+            to_log("Processing warehouse_id: {$warehouseId}");
+            
             $rates = $this->ratesModel->getRates($warehouseId, $resourceTypeId);
+            to_log('rates count for warehouse ' . $warehouseId . ': ' . count($rates));
+            
             if (empty($rates)) continue;
             
             foreach ($rates as $rate) {
@@ -65,10 +35,10 @@ class ResourceUsageReportModel extends Model
                 $materialName = $rate['material_name'];
                 $rateValue = (float)$rate['rate'];
                 
-                // Шукаємо або створюємо запис для матеріалу
-                $materialKey = $materialId;
-                if (!isset($report[$materialKey])) {
-                    $report[$materialKey] = [
+                to_log("Processing material: {$materialName} (id:{$materialId}), rate:{$rateValue}");
+                
+                if (!isset($report[$materialId])) {
+                    $report[$materialId] = [
                         'material_id' => $materialId,
                         'material_name' => $materialName,
                         'total_delta' => 0,
@@ -80,7 +50,6 @@ class ResourceUsageReportModel extends Model
                     ];
                 }
                 
-                // Дані по складу для цього матеріалу
                 $warehouseData = $this->getWarehouseData(
                     $warehouseId,
                     $materialId,
@@ -90,29 +59,32 @@ class ResourceUsageReportModel extends Model
                     $rateValue
                 );
                 
+                to_log("warehouseData rows count: " . count($warehouseData['rows']));
+                
                 if (!empty($warehouseData['rows']) || $warehouseData['opening_balance'] != 0) {
-                    $report[$materialKey]['warehouses'][] = $warehouseData;
-                    $report[$materialKey]['total_delta'] += $warehouseData['total_delta'];
-                    $report[$materialKey]['total_opening'] += $warehouseData['opening_balance'];
-                    $report[$materialKey]['total_incoming'] += $warehouseData['total_incoming'];
-                    $report[$materialKey]['total_consumed'] += $warehouseData['total_consumed'];
-                    $report[$materialKey]['total_closing'] += $warehouseData['closing_balance'];
+                    $report[$materialId]['warehouses'][] = $warehouseData;
+                    $report[$materialId]['total_delta'] += $warehouseData['total_delta'];
+                    $report[$materialId]['total_opening'] += $warehouseData['opening_balance'];
+                    $report[$materialId]['total_incoming'] += $warehouseData['total_incoming'];
+                    $report[$materialId]['total_consumed'] += $warehouseData['total_consumed'];
+                    $report[$materialId]['total_closing'] += $warehouseData['closing_balance'];
                 }
             }
         }
         
-        // Видаляємо матеріали без даних
         $report = array_filter($report, fn($m) => !empty($m['warehouses']));
-        
-        // Сортуємо за назвою матеріалу
         usort($report, fn($a, $b) => strcmp($a['material_name'], $b['material_name']));
+        
+        to_log('Final report count: ' . count($report));
         
         return array_values($report);
     }
     
     private function getWarehouseData(int $warehouseId, int $materialId, int $resourceTypeId, string $dateFrom, string $dateTo, float $rate): array
     {
-        // Отримуємо resource_logs за період
+        to_log("=== getWarehouseData: warehouse={$warehouseId}, material={$materialId} ===");
+        
+        // Отримуємо всі resource_logs за період
         $logs = $this->db->query(
             "SELECT rl.id, rl.log_date, rl.reading, rl.delta, rl.correction_pct, rl.note,
                     rt.format, rt.unit
@@ -127,53 +99,144 @@ class ResourceUsageReportModel extends Model
             [$warehouseId, $resourceTypeId, $dateFrom, $dateTo]
         )->fetchAll();
         
-        // Вхідне сальдо на початок періоду
-        $openingBalance = $this->getOpeningBalance($warehouseId, $materialId, $dateFrom);
+        to_log('logs count: ' . count($logs));
         
+        // Отримуємо всі рухи (надходження та списання) для цього складу та матеріалу
+        $movements = $this->db->query(
+            "SELECT movement_date, quantity, 
+                    CASE WHEN warehouse_to_id = ? THEN 'incoming' 
+                         WHEN warehouse_from_id = ? THEN 'outgoing' 
+                    END AS type,
+                    resource_log_id
+             FROM movements
+             WHERE (warehouse_to_id = ? OR warehouse_from_id = ?)
+               AND material_id = ?
+               AND movement_date >= ?
+               AND movement_date <= ?",
+            [$warehouseId, $warehouseId, $warehouseId, $warehouseId, $materialId, $dateFrom, $dateTo]
+        )->fetchAll();
+        
+        to_log('movements count: ' . count($movements));
+        
+        // Збираємо всі події (ресурсні логи + рухи) в один масив
+        $events = [];
+        
+        foreach ($logs as $log) {
+            $events[] = [
+                'date' => $log['log_date'],
+                'type' => 'resource_log',
+                'data' => $log
+            ];
+        }
+        
+        foreach ($movements as $movement) {
+            $events[] = [
+                'date' => $movement['movement_date'],
+                'type' => $movement['type'],
+                'data' => $movement
+            ];
+        }
+        
+        // Сортуємо за датою
+        usort($events, fn($a, $b) => strcmp($a['date'], $b['date']));
+        
+        to_log('total events count: ' . count($events));
+        
+        // Розраховуємо баланс накопичувально
+        $balance = 0;
         $rows = [];
-        $runningBalance = $openingBalance;
         $totalDelta = 0;
         $totalIncoming = 0;
         $totalConsumed = 0;
         
-        foreach ($logs as $log) {
-            $logDate = $log['log_date'];
-            $delta = (float)$log['delta'];
-            $correctionPct = (float)$log['correction_pct'];
-            $correctionMul = 1 + $correctionPct / 100;
+        foreach ($events as $event) {
+            $date = $event['date'];
             
-            // Надходження матеріалу за цей день
-            $incoming = $this->getIncomingQuantity($warehouseId, $materialId, $logDate);
-            
-            // Списана кількість матеріалу за цей день
-            $consumed = $this->getConsumedQuantity($log['id'], $materialId, $warehouseId);
-            if ($consumed == 0 && $delta > 0) {
-                $consumed = round($delta * $rate * $correctionMul, 2);
+            if ($event['type'] == 'incoming') {
+                $quantity = (float)$event['data']['quantity'];
+                $balance += $quantity;
+                $totalIncoming += $quantity;
+                to_log("INCOMING: date={$date}, qty={$quantity}, balance={$balance}");
+                
+                // Додаємо рядок надходження
+                $rows[] = [
+                    'date' => $date,
+                    'type' => 'incoming',
+                    'reading' => '',
+                    'delta' => '',
+                    'rate' => $rate,
+                    'correction_pct' => '',
+                    'opening_balance' => $balance - $quantity,
+                    'incoming' => $quantity,
+                    'consumed' => 0,
+                    'closing_balance' => $balance,
+                    'note' => 'Надходження на склад',
+                    'has_manual' => false,
+                    'manual_note' => ''
+                ];
             }
-            
-            $openingBalanceDay = $runningBalance;
-            $closingBalance = $openingBalanceDay + $incoming - $consumed;
-            
-            $rows[] = [
-                'date' => $logDate,
-                'reading' => $this->formatValue($log['reading'], $log['format'] ?? 'dec2'),
-                'delta' => $this->formatDelta($delta, $log['format'] ?? 'dec2'),
-                'rate' => $rate,
-                'correction_pct' => $correctionPct,
-                'opening_balance' => $openingBalanceDay,
-                'incoming' => $incoming,
-                'consumed' => $consumed,
-                'closing_balance' => $closingBalance,
-                'note' => $log['note'] ?? ''
-            ];
-            
-            $runningBalance = $closingBalance;
-            $totalDelta += $delta;
-            $totalIncoming += $incoming;
-            $totalConsumed += $consumed;
+            elseif ($event['type'] == 'outgoing') {
+                $quantity = (float)$event['data']['quantity'];
+                $balance -= $quantity;
+                $totalConsumed += $quantity;
+                to_log("OUTGOING: date={$date}, qty={$quantity}, balance={$balance}");
+                
+                $hasManual = $event['data']['resource_log_id'] === null;
+                $rows[] = [
+                    'date' => $date,
+                    'type' => 'outgoing',
+                    'reading' => '',
+                    'delta' => '',
+                    'rate' => $rate,
+                    'correction_pct' => '',
+                    'opening_balance' => $balance + $quantity,
+                    'incoming' => 0,
+                    'consumed' => $quantity,
+                    'closing_balance' => $balance,
+                    'note' => $hasManual ? '⚠️ РУЧНЕ СПИСАННЯ' : 'Списання за нормою',
+                    'has_manual' => $hasManual,
+                    'manual_note' => $hasManual ? "Ручне списання: {$quantity} од." : ''
+                ];
+            }
+            elseif ($event['type'] == 'resource_log') {
+                $log = $event['data'];
+                $delta = (float)$log['delta'];
+                $correctionPct = (float)$log['correction_pct'];
+                $correctionMul = 1 + $correctionPct / 100;
+                
+                // Розраховуємо списання за нормою
+                $consumed = round($delta * $rate * $correctionMul, 2);
+                $balance -= $consumed;
+                $totalDelta += $delta;
+                $totalConsumed += $consumed;
+                
+                to_log("RESOURCE_LOG: date={$date}, delta={$delta}, correction={$correctionPct}%, consumed={$consumed}, balance={$balance}");
+                
+                $rows[] = [
+                    'date' => $date,
+                    'type' => 'resource_log',
+                    'reading' => $this->formatValue($log['reading'], $log['format'] ?? 'dec2'),
+                    'delta' => $this->formatDelta($delta, $log['format'] ?? 'dec2'),
+                    'rate' => $rate,
+                    'correction_pct' => $correctionPct,
+                    'opening_balance' => $balance + $consumed,
+                    'incoming' => 0,
+                    'consumed' => $consumed,
+                    'closing_balance' => $balance,
+                    'note' => $log['note'] ?? '',
+                    'has_manual' => false,
+                    'manual_note' => ''
+                ];
+            }
         }
         
-        $closingBalance = $this->getClosingBalance($warehouseId, $materialId, $dateTo);
+        // Вхідне сальдо на початок періоду
+        $openingBalance = $this->getBalanceBeforeDate($warehouseId, $materialId, $dateFrom);
+        
+        // Вихідне сальдо на кінець періоду
+        $closingBalance = $this->getBalanceBeforeDate($warehouseId, $materialId, date('Y-m-d', strtotime($dateTo . ' +1 day')));
+        
+        to_log("openingBalance: {$openingBalance}, closingBalance: {$closingBalance}");
         
         return [
             'warehouse_id' => $warehouseId,
@@ -188,56 +251,22 @@ class ResourceUsageReportModel extends Model
         ];
     }
     
-    private function getWarehouseName(int $warehouseId): string
-    {
-        $result = $this->db->query("SELECT name FROM warehouses WHERE id = ?", [$warehouseId])->fetch();
-        return $result['name'] ?? '';
-    }
-    
-    private function getOpeningBalance(int $warehouseId, int $materialId, string $dateFrom): float
+    private function getBalanceBeforeDate(int $warehouseId, int $materialId, string $date): float
     {
         $result = $this->db->query(
             "SELECT COALESCE(SUM(CASE WHEN warehouse_to_id = ? THEN quantity ELSE 0 END), 0) -
                     COALESCE(SUM(CASE WHEN warehouse_from_id = ? THEN quantity ELSE 0 END), 0) AS balance
              FROM movements
              WHERE material_id = ? AND movement_date < ?",
-            [$warehouseId, $warehouseId, $materialId, $dateFrom]
+            [$warehouseId, $warehouseId, $materialId, $date]
         )->fetch();
         return (float)($result['balance'] ?? 0);
     }
     
-    private function getClosingBalance(int $warehouseId, int $materialId, string $dateTo): float
+    private function getWarehouseName(int $warehouseId): string
     {
-        $result = $this->db->query(
-            "SELECT COALESCE(SUM(CASE WHEN warehouse_to_id = ? THEN quantity ELSE 0 END), 0) -
-                    COALESCE(SUM(CASE WHEN warehouse_from_id = ? THEN quantity ELSE 0 END), 0) AS balance
-             FROM movements
-             WHERE material_id = ? AND movement_date <= ?",
-            [$warehouseId, $warehouseId, $materialId, $dateTo]
-        )->fetch();
-        return (float)($result['balance'] ?? 0);
-    }
-    
-    private function getConsumedQuantity(int $logId, int $materialId, int $warehouseId): float
-    {
-        $result = $this->db->query(
-            "SELECT COALESCE(SUM(quantity), 0) AS total
-             FROM movements
-             WHERE resource_log_id = ? AND material_id = ? AND warehouse_from_id = ?",
-            [$logId, $materialId, $warehouseId]
-        )->fetch();
-        return (float)$result['total'];
-    }
-    
-    private function getIncomingQuantity(int $warehouseId, int $materialId, string $date): float
-    {
-        $result = $this->db->query(
-            "SELECT COALESCE(SUM(quantity), 0) AS total
-             FROM movements
-             WHERE warehouse_to_id = ? AND material_id = ? AND warehouse_from_id IS NULL AND movement_date = ?",
-            [$warehouseId, $materialId, $date]
-        )->fetch();
-        return (float)$result['total'];
+        $result = $this->db->query("SELECT name FROM warehouses WHERE id = ?", [$warehouseId])->fetch();
+        return $result['name'] ?? '';
     }
     
     private function formatValue($value, string $format): string

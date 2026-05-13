@@ -234,7 +234,7 @@ function to_log($message, $data = null) {
     if ($data !== null) {
         $output .= print_r($data, true);
     }
-    $output .= "\n-------------------------\n";
+    $output .= "\n";
     
     // Записуємо у файл debug.log (дописує в кінець файлу)
     file_put_contents($file, $output, FILE_APPEND);

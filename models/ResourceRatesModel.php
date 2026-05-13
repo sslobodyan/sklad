@@ -84,17 +84,25 @@ class ResourceRatesModel extends Model
     /**
      * Отримати склади, що мають норми для вказаного типу ресурсу
      */
-    public function getWarehousesByResourceType(int $resourceTypeId): array
-    {
-        return $this->db->query(
-            "SELECT DISTINCT w.id, w.name
-             FROM resource_rates rr
-             JOIN warehouses w ON rr.warehouse_id = w.id
-             WHERE rr.resource_type_id = ?
-             ORDER BY w.name",
-            [$resourceTypeId]
-        )->fetchAll();
-    }
+
+public function getWarehousesByResourceType(int $resourceTypeId): array
+{
+    to_log('ResourceRatesModel::getWarehousesByResourceType called with id: ' . $resourceTypeId);
+    
+    $result = $this->db->query(
+        "SELECT DISTINCT w.id, w.name
+         FROM resource_rates rr
+         JOIN warehouses w ON rr.warehouse_id = w.id
+         WHERE rr.resource_type_id = ?
+         ORDER BY w.name",
+        [$resourceTypeId]
+    )->fetchAll();
+    
+    to_log('getWarehousesByResourceType result count: ' . count($result));
+    
+    return $result;
+}
+
 
     /**
      * Отримати матеріали, що використовуються в нормах для вказаного типу ресурсу
