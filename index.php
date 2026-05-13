@@ -19,6 +19,12 @@ session_set_cookie_params([
     'samesite' => $secure ? 'None' : 'Lax',
 ]);
 date_default_timezone_set('Europe/Kyiv');
+
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 define('ROOT_PATH', __DIR__);
 define('BASE_PATH', rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'));
@@ -129,4 +135,20 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     echo '<h1>Помилка сервера</h1><p>' . htmlspecialchars($e->getMessage()) . '</p>';
+}
+
+
+function to_log($message, $data = null) {
+    $file = __DIR__ . '/debug.log';
+    $time = date('Y-m-d H:i:s');
+    
+    // Форматуємо повідомлення
+    $output = "[$time] $message".'  ';
+    if ($data !== null) {
+        $output .= print_r($data, true);
+    }
+    $output .= "\n-------------------------\n";
+    
+    // Записуємо у файл debug.log (дописує в кінець файлу)
+    file_put_contents($file, $output, FILE_APPEND);
 }

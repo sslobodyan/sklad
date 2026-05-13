@@ -30,11 +30,14 @@ class MovementModel extends Model
      */
     public function createFromResource(array $data): int
     {
+
+        $data['author'] = $this->authorStamp();
+
         $this->db->query(
             "INSERT INTO movements (
                 movement_date, warehouse_from_id, warehouse_to_id, material_id, quantity, note, author,
                 resource_log_id, resource_value, resource_delta, resource_rate, resource_correction
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['movement_date'],
                 $data['warehouse_from_id'] ?: null,
@@ -42,7 +45,7 @@ class MovementModel extends Model
                 $data['material_id'],
                 $data['quantity'],
                 trim($data['note'] ?? ''),
-                $this->authorStamp(),
+                $data['author'],
                 $data['resource_log_id'],
                 $data['resource_value'] ?? null,
                 $data['resource_delta'] ?? null,
@@ -50,7 +53,10 @@ class MovementModel extends Model
                 $data['resource_correction'] ?? null,
             ]
         );
-        return $this->db->lastInsertId();
+
+	$lastId = $this->db->lastInsertId();
+
+        return $lastId;
     }
 
     public function update(int $id, array $data): void

@@ -1,0 +1,456 @@
+[2026-05-13 11:13:32] editlog start  
+-------------------------
+[2026-05-13 11:13:32] перевірки пройшли  
+-------------------------
+[2026-05-13 11:13:32] updateReading start  
+-------------------------
+[2026-05-13 11:13:32] UPDATE resource_log  
+-------------------------
+[2026-05-13 11:13:32] recalculateChain start  
+-------------------------
+[2026-05-13 11:13:32] $startLog  Array
+(
+    [id] => 28
+    [warehouse_id] => 47
+    [resource_type_id] => 1
+    [log_date] => 2026-05-09
+    [reading] => 300.000000
+    [prev_reading] => 100.000000
+    [delta] => 200.000000
+    [correction_pct] => 0.00
+    [note] => 
+    [author] => 2026.05.13, Сергій Слободян
+    [created_at] => 2026-05-13 09:53:57
+)
+
+-------------------------
+[2026-05-13 11:13:32] $chain   Array
+(
+    [0] => Array
+        (
+            [id] => 28
+            [warehouse_id] => 47
+            [resource_type_id] => 1
+            [log_date] => 2026-05-09
+            [reading] => 300.000000
+            [prev_reading] => 100.000000
+            [delta] => 200.000000
+            [correction_pct] => 0.00
+            [note] => 
+            [author] => 2026.05.13, Сергій Слободян
+            [created_at] => 2026-05-13 09:53:57
+        )
+
+)
+
+-------------------------
+[2026-05-13 11:13:32] Створити нові (якщо не перший)  
+-------------------------
+[2026-05-13 11:13:32] $created createMovementsForLog  
+-------------------------
+[2026-05-13 11:13:32] createMovementsForLog start  
+-------------------------
+[2026-05-13 11:13:32] Before $movementModel->createFromResource  
+-------------------------
+[2026-05-13 11:15:26] editlog start  
+-------------------------
+[2026-05-13 11:15:26] перевірки пройшли  
+-------------------------
+[2026-05-13 11:15:26] updateReading start  
+-------------------------
+[2026-05-13 11:15:26] UPDATE resource_log  
+-------------------------
+[2026-05-13 11:15:26] recalculateChain start  
+-------------------------
+[2026-05-13 11:15:26] $startLog  Array
+(
+    [id] => 28
+    [warehouse_id] => 47
+    [resource_type_id] => 1
+    [log_date] => 2026-05-09
+    [reading] => 300.000000
+    [prev_reading] => 100.000000
+    [delta] => 200.000000
+    [correction_pct] => 0.00
+    [note] => 
+    [author] => 2026.05.13, Сергій Слободян
+    [created_at] => 2026-05-13 09:53:57
+)
+
+-------------------------
+[2026-05-13 11:15:26] $chain   Array
+(
+    [0] => Array
+        (
+            [id] => 28
+            [warehouse_id] => 47
+            [resource_type_id] => 1
+            [log_date] => 2026-05-09
+            [reading] => 300.000000
+            [prev_reading] => 100.000000
+            [delta] => 200.000000
+            [correction_pct] => 0.00
+            [note] => 
+            [author] => 2026.05.13, Сергій Слободян
+            [created_at] => 2026-05-13 09:53:57
+        )
+
+)
+
+-------------------------
+[2026-05-13 11:15:26] Створити нові (якщо не перший)  
+-------------------------
+[2026-05-13 11:15:26] $created createMovementsForLog  
+-------------------------
+[2026-05-13 11:15:26] createMovementsForLog start  
+-------------------------
+[2026-05-13 11:15:26] Before $movementModel->createFromResource  
+-------------------------
+[2026-05-13 11:15:26] createFromResource data  Array
+(
+    [movement_date] => 2026-05-09
+    [warehouse_from_id] => 47
+    [warehouse_to_id] => 
+    [material_id] => 17
+    [quantity] => 100
+    [note] => Розр. (200 км, Нр 0.5)
+    [resource_log_id] => 28
+    [resource_value] => 300
+    [resource_delta] => 200
+    [resource_rate] => 0.5
+    [resource_correction] => 0
+)
+
+-------------------------
+[2026-05-13 11:18:52] editlog start  
+-------------------------
+[2026-05-13 11:18:52] перевірки пройшли  
+-------------------------
+[2026-05-13 11:18:52] updateReading start  
+-------------------------
+[2026-05-13 11:18:52] UPDATE resource_log  
+-------------------------
+[2026-05-13 11:18:52] recalculateChain start  
+-------------------------
+[2026-05-13 11:18:52] $startLog  Array
+(
+    [id] => 28
+    [warehouse_id] => 47
+    [resource_type_id] => 1
+    [log_date] => 2026-05-09
+    [reading] => 300.000000
+    [prev_reading] => 100.000000
+    [delta] => 200.000000
+    [correction_pct] => 0.00
+    [note] => 
+    [author] => 2026.05.13, Сергій Слободян
+    [created_at] => 2026-05-13 09:53:57
+)
+
+-------------------------
+[2026-05-13 11:18:52] $chain   Array
+(
+    [0] => Array
+        (
+            [id] => 28
+            [warehouse_id] => 47
+            [resource_type_id] => 1
+            [log_date] => 2026-05-09
+            [reading] => 300.000000
+            [prev_reading] => 100.000000
+            [delta] => 200.000000
+            [correction_pct] => 0.00
+            [note] => 
+            [author] => 2026.05.13, Сергій Слободян
+            [created_at] => 2026-05-13 09:53:57
+        )
+
+)
+
+-------------------------
+[2026-05-13 11:18:52] Створити нові (якщо не перший)  
+-------------------------
+[2026-05-13 11:18:52] $created createMovementsForLog  
+-------------------------
+[2026-05-13 11:18:52] createMovementsForLog start  
+-------------------------
+[2026-05-13 11:18:52] Before $movementModel->createFromResource  
+-------------------------
+[2026-05-13 11:18:52] createFromResource data  Array
+(
+    [movement_date] => 2026-05-09
+    [warehouse_from_id] => 47
+    [warehouse_to_id] => 
+    [material_id] => 17
+    [quantity] => 100
+    [note] => Розр. (200 км, Нр 0.5)
+    [resource_log_id] => 28
+    [resource_value] => 300
+    [resource_delta] => 200
+    [resource_rate] => 0.5
+    [resource_correction] => 0
+    [author] => 2026.05.13, Сергій Слободян
+)
+
+-------------------------
+[2026-05-13 11:21:00] editlog start  
+-------------------------
+[2026-05-13 11:21:00] перевірки пройшли  
+-------------------------
+[2026-05-13 11:21:00] updateReading start  
+-------------------------
+[2026-05-13 11:21:00] UPDATE resource_log  
+-------------------------
+[2026-05-13 11:21:00] recalculateChain start  
+-------------------------
+[2026-05-13 11:21:00] $startLog  Array
+(
+    [id] => 28
+    [warehouse_id] => 47
+    [resource_type_id] => 1
+    [log_date] => 2026-05-09
+    [reading] => 300.000000
+    [prev_reading] => 100.000000
+    [delta] => 200.000000
+    [correction_pct] => 0.00
+    [note] => 
+    [author] => 2026.05.13, Сергій Слободян
+    [created_at] => 2026-05-13 09:53:57
+)
+
+-------------------------
+[2026-05-13 11:21:00] $chain   Array
+(
+    [0] => Array
+        (
+            [id] => 28
+            [warehouse_id] => 47
+            [resource_type_id] => 1
+            [log_date] => 2026-05-09
+            [reading] => 300.000000
+            [prev_reading] => 100.000000
+            [delta] => 200.000000
+            [correction_pct] => 0.00
+            [note] => 
+            [author] => 2026.05.13, Сергій Слободян
+            [created_at] => 2026-05-13 09:53:57
+        )
+
+)
+
+-------------------------
+[2026-05-13 11:21:00] Створити нові (якщо не перший)  
+-------------------------
+[2026-05-13 11:21:00] $created createMovementsForLog  
+-------------------------
+[2026-05-13 11:21:00] createMovementsForLog start  
+-------------------------
+[2026-05-13 11:21:00] Before $movementModel->createFromResource  
+-------------------------
+[2026-05-13 11:21:00] createFromResource data  Array
+(
+    [movement_date] => 2026-05-09
+    [warehouse_from_id] => 47
+    [warehouse_to_id] => 
+    [material_id] => 17
+    [quantity] => 100
+    [note] => Розр. (200 км, Нр 0.5)
+    [resource_log_id] => 28
+    [resource_value] => 300
+    [resource_delta] => 200
+    [resource_rate] => 0.5
+    [resource_correction] => 0
+    [author] => 2026.05.13, Сергій Слободян
+)
+
+-------------------------
+[2026-05-13 11:28:33] editlog start  
+-------------------------
+[2026-05-13 11:28:33] перевірки пройшли  
+-------------------------
+[2026-05-13 11:28:33] updateReading start  
+-------------------------
+[2026-05-13 11:28:33] UPDATE resource_log  
+-------------------------
+[2026-05-13 11:28:33] recalculateChain start  
+-------------------------
+[2026-05-13 11:28:33] $startLog  Array
+(
+    [id] => 28
+    [warehouse_id] => 47
+    [resource_type_id] => 1
+    [log_date] => 2026-05-09
+    [reading] => 300.000000
+    [prev_reading] => 100.000000
+    [delta] => 200.000000
+    [correction_pct] => 0.00
+    [note] => 
+    [author] => 2026.05.13, Сергій Слободян
+    [created_at] => 2026-05-13 09:53:57
+)
+
+-------------------------
+[2026-05-13 11:28:33] $chain   Array
+(
+    [0] => Array
+        (
+            [id] => 28
+            [warehouse_id] => 47
+            [resource_type_id] => 1
+            [log_date] => 2026-05-09
+            [reading] => 300.000000
+            [prev_reading] => 100.000000
+            [delta] => 200.000000
+            [correction_pct] => 0.00
+            [note] => 
+            [author] => 2026.05.13, Сергій Слободян
+            [created_at] => 2026-05-13 09:53:57
+        )
+
+)
+
+-------------------------
+[2026-05-13 11:28:33] Створити нові (якщо не перший)  
+-------------------------
+[2026-05-13 11:28:33] $created createMovementsForLog  
+-------------------------
+[2026-05-13 11:28:33] createMovementsForLog start  
+-------------------------
+[2026-05-13 11:28:33] Before $movementModel->createFromResource  
+-------------------------
+[2026-05-13 11:28:33] createFromResource data  Array
+(
+    [movement_date] => 2026-05-09
+    [warehouse_from_id] => 47
+    [warehouse_to_id] => 
+    [material_id] => 17
+    [quantity] => 100
+    [note] => Розр. (200 км, Нр 0.5)
+    [resource_log_id] => 28
+    [resource_value] => 300
+    [resource_delta] => 200
+    [resource_rate] => 0.5
+    [resource_correction] => 0
+    [author] => 2026.05.13, Сергій Слободян
+)
+
+-------------------------
+[2026-05-13 11:28:33] $lastId  151
+-------------------------
+[2026-05-13 11:28:33] createMovementsForLog end   1
+-------------------------
+[2026-05-13 11:28:33] $created  1
+-------------------------
+[2026-05-13 11:28:33] recalculateChain  $result  Array
+(
+    [success] => 1
+    [log_id] => 28
+    [delta] => 200
+    [movements_created] => 1
+)
+
+-------------------------
+[2026-05-13 11:28:33] updateReading  Array
+(
+    [success] => 1
+    [log_id] => 28
+    [delta] => 200
+    [movements_created] => 1
+)
+
+-------------------------
+[2026-05-13 11:29:18] editlog start  
+-------------------------
+[2026-05-13 11:29:18] перевірки пройшли  
+-------------------------
+[2026-05-13 11:29:18] updateReading start  
+-------------------------
+[2026-05-13 11:29:18] UPDATE resource_log  
+-------------------------
+[2026-05-13 11:29:18] recalculateChain start  
+-------------------------
+[2026-05-13 11:29:18] $startLog  Array
+(
+    [id] => 28
+    [warehouse_id] => 47
+    [resource_type_id] => 1
+    [log_date] => 2026-05-09
+    [reading] => 400.000000
+    [prev_reading] => 100.000000
+    [delta] => 200.000000
+    [correction_pct] => 0.00
+    [note] => 
+    [author] => 2026.05.13, Сергій Слободян
+    [created_at] => 2026-05-13 09:53:57
+)
+
+-------------------------
+[2026-05-13 11:29:18] $chain   Array
+(
+    [0] => Array
+        (
+            [id] => 28
+            [warehouse_id] => 47
+            [resource_type_id] => 1
+            [log_date] => 2026-05-09
+            [reading] => 400.000000
+            [prev_reading] => 100.000000
+            [delta] => 200.000000
+            [correction_pct] => 0.00
+            [note] => 
+            [author] => 2026.05.13, Сергій Слободян
+            [created_at] => 2026-05-13 09:53:57
+        )
+
+)
+
+-------------------------
+[2026-05-13 11:29:18] Створити нові (якщо не перший)  
+-------------------------
+[2026-05-13 11:29:18] $created createMovementsForLog  
+-------------------------
+[2026-05-13 11:29:18] createMovementsForLog start  
+-------------------------
+[2026-05-13 11:29:18] Before $movementModel->createFromResource  
+-------------------------
+[2026-05-13 11:29:18] createFromResource data  Array
+(
+    [movement_date] => 2026-05-09
+    [warehouse_from_id] => 47
+    [warehouse_to_id] => 
+    [material_id] => 17
+    [quantity] => 150
+    [note] => Розр. (300 км, Нр 0.5)
+    [resource_log_id] => 28
+    [resource_value] => 400
+    [resource_delta] => 300
+    [resource_rate] => 0.5
+    [resource_correction] => 0
+    [author] => 2026.05.13, Сергій Слободян
+)
+
+-------------------------
+[2026-05-13 11:29:18] $lastId  152
+-------------------------
+[2026-05-13 11:29:18] createMovementsForLog end   1
+-------------------------
+[2026-05-13 11:29:18] $created  1
+-------------------------
+[2026-05-13 11:29:18] recalculateChain  $result  Array
+(
+    [success] => 1
+    [log_id] => 28
+    [delta] => 300
+    [movements_created] => 1
+)
+
+-------------------------
+[2026-05-13 11:29:18] updateReading  Array
+(
+    [success] => 1
+    [log_id] => 28
+    [delta] => 300
+    [movements_created] => 1
+)
+
+-------------------------

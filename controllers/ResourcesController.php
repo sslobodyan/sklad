@@ -387,9 +387,13 @@ class ResourcesController extends Controller
 
     public function editlog($id = null): void
     {
+
+to_log('editlog start');
+
         if (!$this->isPost() || !$id) { $this->redirect('resources'); return; }
 
         $date = $this->post('log_date');
+
         $reading = (float)$this->post('reading');
         $note = $this->post('note', '');
         $correctionPct = (float)$this->post('correction_pct', 0);
@@ -448,7 +452,11 @@ class ResourcesController extends Controller
             return;
         }
 
+to_log('перевірки пройшли');
+
         $result = $this->model->updateReading((int)$id, $date, $reading, $note, $correctionPct, $this->movementModel);
+
+to_log('updateReading', $result);
 
         if ($result['success']) {
             $msg = 'Оновлено: Δ ' . $result['delta'] . '. Рухів: ' . $result['movements_created'];

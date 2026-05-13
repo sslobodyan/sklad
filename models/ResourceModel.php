@@ -33,12 +33,14 @@ class ResourceModel extends Model
 
     public function updateType(int $id, string $name, string $unit, string $format = 'int'): void
     {
+        $this->setCurrentUser();
         $this->db->query("UPDATE resource_types SET name = ?, unit = ?, format = ?, author = ? WHERE id = ?", [trim($name), trim($unit), $format, $this->authorStamp(), $id]);
     }
 
     public function deleteType(int $id): bool
     {
         try {
+            $this->setCurrentUser();
             $this->db->query("DELETE FROM resource_types WHERE id = ?", [$id]);
             return true;
         } catch (\PDOException $e) {
@@ -78,6 +80,7 @@ class ResourceModel extends Model
 
     public function removeWarehouseResource(int $warehouseId, int $resourceTypeId): void
     {
+        $this->setCurrentUser();
         $this->db->query(
             "DELETE FROM warehouse_resources WHERE warehouse_id = ? AND resource_type_id = ?",
             [$warehouseId, $resourceTypeId]
@@ -119,6 +122,7 @@ class ResourceModel extends Model
 
     public function saveRate(int $warehouseId, int $resourceTypeId, int $materialId, float $rate, ?int $sourceWarehouseId, bool $spreadByDay = false): void
     {
+        $this->setCurrentUser();
         $this->db->query(
             "INSERT INTO resource_rates (warehouse_id, resource_type_id, material_id, rate, source_warehouse_id, spread_by_day, author)
              VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -129,6 +133,7 @@ class ResourceModel extends Model
 
     public function deleteRate(int $id): void
     {
+        $this->setCurrentUser();
         $this->db->query("DELETE FROM resource_rates WHERE id = ?", [$id]);
     }
 
@@ -235,6 +240,7 @@ class ResourceModel extends Model
 
     private function createMovementsForLog(int $logId, int $warehouseId, int $resourceTypeId, string $date, float $reading, float $prevReading, float $delta, string $logNote, string $prevDate, float $correctionPct, MovementModel $movementModel): int
     {
+
         $rates = $this->getRates($warehouseId, $resourceTypeId);
         $type = $this->getTypeById($resourceTypeId);
         $unit = $type['unit'] ?? '';
@@ -264,6 +270,7 @@ class ResourceModel extends Model
                 if ($logNote !== '') {
                     $noteBase .= ', ' . $logNote;
                 }
+
                 $movementModel->createFromResource([
                     'movement_date' => $date,
                     'warehouse_from_id' => $warehouseId,
@@ -280,6 +287,7 @@ class ResourceModel extends Model
                 $created++;
             }
         }
+
         return $created;
     }
 
@@ -456,6 +464,8 @@ class ResourceModel extends Model
      */
     public function updateReading(int $logId, string $date, float $reading, string $note, float $correctionPct, MovementModel $movementModel): array
     {
+
+        $this->setCurrentUser();
         $log = $this->getLogById($logId);
         if (!$log) {
             return ['success' => false, 'error' => 'Запис не знайдено'];
@@ -486,6 +496,7 @@ class ResourceModel extends Model
      */
     private function recalculateChain(int $warehouseId, int $resourceTypeId, int $startLogId, MovementModel $movementModel): array
     {
+
         // Знайти запис що ми вставили/оновили
         $startLog = $this->db->query(
             "SELECT * FROM resource_logs WHERE id = ?", [$startLogId]
@@ -560,11 +571,13 @@ class ResourceModel extends Model
 
             // Створити нові (якщо не перший)
             if (!$isFirst && $delta > 0) {
+
                 $created = $this->createMovementsForLog(
                     $logId, $warehouseId, $resourceTypeId,
                     $log['log_date'], $reading, $prevReading, $delta,
                     trim($logNote), $prevDate, $correctionPct, $movementModel
                 );
+
                 $totalMovements += $created;
             }
 
@@ -581,9 +594,11 @@ class ResourceModel extends Model
             'delta' => $firstDelta,
             'movements_created' => $totalMovements,
         ];
+
         if ($firstIsFirst) {
             $result['is_first'] = true;
         }
+
         if ($totalRecalculated > 1) {
             $result['recalculated'] = $totalRecalculated - 1; // скільки пізніших перепроведено
         }
@@ -620,4 +635,125 @@ class ResourceModel extends Model
             $this->recalculateChain($warehouseId, $resourceTypeId, (int)$next['id'], $movementModel);
         }
     }
+
+    /**
+     * Звіт про витрачання ресурсів
+     */
+    public function getResourceUsageReport(string $dateFrom, string $dateTo, array $warehouseIds, int $resourceTypeId): array
+    {
+        $db = $this->db;
+        
+        // Якщо склади не вибрані — беремо всі склади з цим типом ресурсу
+        // Якщо вибрані — тільки вибрані склади
+        if (empty($warehouseIds)) {
+            // Всі склади з цим типом ресурсу
+            $warehouses = $db->query(
+                "SELECT w.id, w.name
+                 FROM warehouse_resources wr
+                 JOIN warehouses w ON wr.warehouse_id = w.id
+                 WHERE wr.resource_type_id = ?
+                 ORDER BY w.name",
+                [$resourceTypeId]
+            )->fetchAll();
+        } else {
+            // Тільки вибрані склади
+            $whClause = "wr.warehouse_id IN (" . implode(',', array_fill(0, count($warehouseIds), '?')) . ")";
+            $warehouses = $db->query(
+                "SELECT w.id, w.name
+                 FROM warehouse_resources wr
+                 JOIN warehouses w ON wr.warehouse_id = w.id
+                 WHERE wr.resource_type_id = ? AND {$whClause}
+                 ORDER BY w.name",
+                array_merge([$resourceTypeId], $warehouseIds)
+            )->fetchAll();
+        }
+
+        $report = [];
+
+        foreach ($warehouses as $wh) {
+            $whId = (int)$wh['id'];
+            
+            // Попередній показник (останній перед dateFrom)
+            $prevReading = $db->query(
+                "SELECT reading FROM resource_logs
+                 WHERE warehouse_id = ? AND resource_type_id = ? AND log_date < ?
+                 ORDER BY log_date DESC, id DESC LIMIT 1",
+                [$whId, $resourceTypeId, $dateFrom]
+            )->fetch();
+            $openingReading = $prevReading ? (float)$prevReading['reading'] : 0;
+
+            // Поточний показник (останній <= dateTo)
+            $currentReading = $db->query(
+                "SELECT reading FROM resource_logs
+                 WHERE warehouse_id = ? AND resource_type_id = ? AND log_date <= ?
+                 ORDER BY log_date DESC, id DESC LIMIT 1",
+                [$whId, $resourceTypeId, $dateTo]
+            )->fetch();
+            $currentValue = $currentReading ? (float)$currentReading['reading'] : 0;
+
+            // Дельта ресурсу
+            $resourceDelta = $currentValue - $openingReading;
+
+            // Отримуємо норми для цього складу+ресурсу
+            $rates = $this->getRates($whId, $resourceTypeId);
+
+            // Отримуємо рухи матеріалів за період
+            $whPlaceholder = !empty($warehouseIds) 
+                ? "AND warehouse_to_id IN (" . implode(',', array_fill(0, count($warehouseIds), '?')) . ")"
+                : "";
+            $whMovementsParams = !empty($warehouseIds) ? $warehouseIds : [];
+
+            $movements = $db->query(
+                "SELECT material_id, warehouse_to_id, SUM(quantity) as received
+                 FROM movements
+                 WHERE movement_date >= ? AND movement_date <= ?
+                 AND warehouse_from_id IS NULL
+                 AND warehouse_to_id = ?
+                 {$whPlaceholder}
+                 GROUP BY material_id, warehouse_to_id",
+                array_merge([$dateFrom, $dateTo, $whId], $whMovementsParams)
+            )->fetchAll();
+
+            $receivedByMaterial = [];
+            foreach ($movements as $m) {
+                $receivedByMaterial[(int)$m['material_id']] = (float)$m['received'];
+            }
+
+            // Розрахунок по кожному матеріалу
+            $materials = [];
+            foreach ($rates as $rate) {
+                $matId = (int)$rate['material_id'];
+                $rateValue = (float)$rate['rate'];
+                $correctionPct = 0; // TODO: отримати з resource_logs
+
+                // Списано = дельта * норма * (1 + поправка)
+                $consumed = $resourceDelta * $rateValue * (1 + $correctionPct / 100);
+                
+                // Залишок = надійшло - списано
+                $received = $receivedByMaterial[$matId] ?? 0;
+                $balance = $received - $consumed;
+
+                $materials[$matId] = [
+                    'name' => $rate['material_name'],
+                    'received' => $received,
+                    'rate' => $rateValue,
+                    'correction' => $correctionPct,
+                    'consumed' => $consumed,
+                    'balance' => $balance
+                ];
+            }
+
+            $report[] = [
+                'warehouse_id' => $whId,
+                'warehouse_name' => $wh['name'],
+                'opening_reading' => $openingReading,
+                'current_reading' => $currentValue,
+                'resource_delta' => $resourceDelta,
+                'materials' => $materials
+            ];
+        }
+
+        return $report;
+    }
+
 }
