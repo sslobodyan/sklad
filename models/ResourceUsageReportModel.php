@@ -23,19 +23,13 @@ class ResourceUsageReportModel extends Model
         $report = [];
         
         foreach ($warehouseIds as $warehouseId) {
-            to_log("Processing warehouse_id: {$warehouseId}");
-            
             $rates = $this->ratesModel->getRates($warehouseId, $resourceTypeId);
-            to_log('rates count for warehouse ' . $warehouseId . ': ' . count($rates));
-            
             if (empty($rates)) continue;
             
             foreach ($rates as $rate) {
                 $materialId = $rate['material_id'];
                 $materialName = $rate['material_name'];
                 $rateValue = (float)$rate['rate'];
-                
-                to_log("Processing material: {$materialName} (id:{$materialId}), rate:{$rateValue}");
                 
                 if (!isset($report[$materialId])) {
                     $report[$materialId] = [
@@ -59,8 +53,6 @@ class ResourceUsageReportModel extends Model
                     $rateValue
                 );
                 
-                to_log("warehouseData rows count: " . count($warehouseData['rows']));
-                
                 if (!empty($warehouseData['rows']) || $warehouseData['opening_balance'] != 0) {
                     $report[$materialId]['warehouses'][] = $warehouseData;
                     $report[$materialId]['total_delta'] += $warehouseData['total_delta'];
@@ -74,8 +66,6 @@ class ResourceUsageReportModel extends Model
         
         $report = array_filter($report, fn($m) => !empty($m['warehouses']));
         usort($report, fn($a, $b) => strcmp($a['material_name'], $b['material_name']));
-        
-        to_log('Final report count: ' . count($report));
         
         return array_values($report);
     }
@@ -101,7 +91,8 @@ class ResourceUsageReportModel extends Model
         
         to_log('logs count: ' . count($logs));
         
-        // Отримуємо всі рухи (надходження та списання) для цього складу та матеріалу
+        // Отримуємо всі рухи для цього складу та матеріалу
+        // Але виключаємо ресурсні списання (вони будуть оброблені через resource_logs)
         $movements = $this->db->query(
             "SELECT movement_date, quantity, 
                     CASE WHEN warehouse_to_id = ? THEN 'incoming' 
@@ -112,29 +103,55 @@ class ResourceUsageReportModel extends Model
              WHERE (warehouse_to_id = ? OR warehouse_from_id = ?)
                AND material_id = ?
                AND movement_date >= ?
-               AND movement_date <= ?",
-            [$warehouseId, $warehouseId, $warehouseId, $warehouseId, $materialId, $dateFrom, $dateTo]
+               AND movement_date <= ?
+               AND (resource_log_id IS NULL OR warehouse_to_id = ?)
+             ORDER BY movement_date ASC",
+            [$warehouseId, $warehouseId, $warehouseId, $warehouseId, $materialId, $dateFrom, $dateTo, $warehouseId]
         )->fetchAll();
         
-        to_log('movements count: ' . count($movements));
+        to_log('movements count (without resource outgoing): ' . count($movements));
         
-        // Збираємо всі події (ресурсні логи + рухи) в один масив
+        // Збираємо всі події
         $events = [];
         
+        // Додаємо resource_logs як події списання
         foreach ($logs as $log) {
+            $delta = (float)$log['delta'];
+            $correctionPct = (float)$log['correction_pct'];
+            $correctionMul = 1 + $correctionPct / 100;
+            $consumed = round($delta * $rate * $correctionMul, 2);
+            
             $events[] = [
                 'date' => $log['log_date'],
                 'type' => 'resource_log',
-                'data' => $log
+                'delta' => $delta,
+                'reading' => $log['reading'],
+                'format' => $log['format'] ?? 'dec2',
+                'correction_pct' => $correctionPct,
+                'consumed' => $consumed,
+                'note' => $log['note'] ?? '',
+                'log_id' => $log['id']
             ];
         }
         
+        // Додаємо рухи (тільки надходження та ручні списання)
         foreach ($movements as $movement) {
-            $events[] = [
-                'date' => $movement['movement_date'],
-                'type' => $movement['type'],
-                'data' => $movement
-            ];
+            if ($movement['type'] == 'incoming') {
+                $events[] = [
+                    'date' => $movement['movement_date'],
+                    'type' => 'incoming',
+                    'quantity' => (float)$movement['quantity'],
+                    'note' => ''
+                ];
+            } elseif ($movement['type'] == 'outgoing' && $movement['resource_log_id'] === null) {
+                // Тільки ручні списання (не пов'язані з ресурсом)
+                $events[] = [
+                    'date' => $movement['movement_date'],
+                    'type' => 'manual_outgoing',
+                    'quantity' => (float)$movement['quantity'],
+                    'note' => 'Ручне списання'
+                ];
+            }
         }
         
         // Сортуємо за датою
@@ -143,7 +160,9 @@ class ResourceUsageReportModel extends Model
         to_log('total events count: ' . count($events));
         
         // Розраховуємо баланс накопичувально
-        $balance = 0;
+        $balance = $this->getBalanceBeforeDate($warehouseId, $materialId, $dateFrom);
+        $openingBalance = $balance;
+        
         $rows = [];
         $totalDelta = 0;
         $totalIncoming = 0;
@@ -151,14 +170,13 @@ class ResourceUsageReportModel extends Model
         
         foreach ($events as $event) {
             $date = $event['date'];
+            $openingBalanceDay = $balance;
             
             if ($event['type'] == 'incoming') {
-                $quantity = (float)$event['data']['quantity'];
+                $quantity = $event['quantity'];
                 $balance += $quantity;
                 $totalIncoming += $quantity;
-                to_log("INCOMING: date={$date}, qty={$quantity}, balance={$balance}");
                 
-                // Додаємо рядок надходження
                 $rows[] = [
                     'date' => $date,
                     'type' => 'incoming',
@@ -166,7 +184,7 @@ class ResourceUsageReportModel extends Model
                     'delta' => '',
                     'rate' => $rate,
                     'correction_pct' => '',
-                    'opening_balance' => $balance - $quantity,
+                    'opening_balance' => $openingBalanceDay,
                     'incoming' => $quantity,
                     'consumed' => 0,
                     'closing_balance' => $balance,
@@ -174,67 +192,57 @@ class ResourceUsageReportModel extends Model
                     'has_manual' => false,
                     'manual_note' => ''
                 ];
+                to_log("INCOMING: date={$date}, qty={$quantity}, balance={$balance}");
             }
-            elseif ($event['type'] == 'outgoing') {
-                $quantity = (float)$event['data']['quantity'];
+            elseif ($event['type'] == 'manual_outgoing') {
+                $quantity = $event['quantity'];
                 $balance -= $quantity;
                 $totalConsumed += $quantity;
-                to_log("OUTGOING: date={$date}, qty={$quantity}, balance={$balance}");
                 
-                $hasManual = $event['data']['resource_log_id'] === null;
                 $rows[] = [
                     'date' => $date,
-                    'type' => 'outgoing',
+                    'type' => 'manual_outgoing',
                     'reading' => '',
                     'delta' => '',
                     'rate' => $rate,
                     'correction_pct' => '',
-                    'opening_balance' => $balance + $quantity,
+                    'opening_balance' => $openingBalanceDay,
                     'incoming' => 0,
                     'consumed' => $quantity,
                     'closing_balance' => $balance,
-                    'note' => $hasManual ? '⚠️ РУЧНЕ СПИСАННЯ' : 'Списання за нормою',
-                    'has_manual' => $hasManual,
-                    'manual_note' => $hasManual ? "Ручне списання: {$quantity} од." : ''
+                    'note' => $event['note'],
+                    'has_manual' => true,
+                    'manual_note' => "Ручне списання: {$quantity} од."
                 ];
+                to_log("MANUAL OUTGOING: date={$date}, qty={$quantity}, balance={$balance}");
             }
             elseif ($event['type'] == 'resource_log') {
-                $log = $event['data'];
-                $delta = (float)$log['delta'];
-                $correctionPct = (float)$log['correction_pct'];
-                $correctionMul = 1 + $correctionPct / 100;
-                
-                // Розраховуємо списання за нормою
-                $consumed = round($delta * $rate * $correctionMul, 2);
+                $consumed = $event['consumed'];
+                $delta = $event['delta'];
                 $balance -= $consumed;
                 $totalDelta += $delta;
                 $totalConsumed += $consumed;
                 
-                to_log("RESOURCE_LOG: date={$date}, delta={$delta}, correction={$correctionPct}%, consumed={$consumed}, balance={$balance}");
-                
                 $rows[] = [
                     'date' => $date,
                     'type' => 'resource_log',
-                    'reading' => $this->formatValue($log['reading'], $log['format'] ?? 'dec2'),
-                    'delta' => $this->formatDelta($delta, $log['format'] ?? 'dec2'),
+                    'reading' => $this->formatValue($event['reading'], $event['format']),
+                    'delta' => $this->formatDelta($delta, $event['format']),
                     'rate' => $rate,
-                    'correction_pct' => $correctionPct,
-                    'opening_balance' => $balance + $consumed,
+                    'correction_pct' => $event['correction_pct'],
+                    'opening_balance' => $openingBalanceDay,
                     'incoming' => 0,
                     'consumed' => $consumed,
                     'closing_balance' => $balance,
-                    'note' => $log['note'] ?? '',
+                    'note' => $event['note'],
                     'has_manual' => false,
                     'manual_note' => ''
                 ];
+                to_log("RESOURCE_LOG: date={$date}, delta={$delta}, consumed={$consumed}, balance={$balance}");
             }
         }
         
-        // Вхідне сальдо на початок періоду
-        $openingBalance = $this->getBalanceBeforeDate($warehouseId, $materialId, $dateFrom);
-        
-        // Вихідне сальдо на кінець періоду
-        $closingBalance = $this->getBalanceBeforeDate($warehouseId, $materialId, date('Y-m-d', strtotime($dateTo . ' +1 day')));
+        $closingBalance = $balance;
         
         to_log("openingBalance: {$openingBalance}, closingBalance: {$closingBalance}");
         
