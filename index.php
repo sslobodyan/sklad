@@ -113,6 +113,8 @@ $route = parse_url($requestUri, PHP_URL_PATH);
 $route = substr($route, strlen(BASE_PATH));
 $route = trim($route, '/');
 
+to_log('$requestUri = ',$requestUri);
+
 if (empty($route)) {
     header('Location: ' . BASE_PATH . '/movements');
     exit;
@@ -174,6 +176,14 @@ if ($controllerName === 'ResourcesController') {
     } elseif ($action === 'export') {
         $controllerName = 'ResourceExportController';
         $action = 'export';
+        $id = null;
+    }
+}
+
+if ($controllerName === 'ReportsController') {
+    if ($action === 'resource') {
+        $controllerName = 'ResourceReportController';
+        $action = 'index';
         $id = null;
     }
 }
