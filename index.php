@@ -105,39 +105,82 @@ try {
     die('Помилка підключення до бази даних: ' . $e->getMessage());
 }
 
+// =============================================
 // Визначення маршруту
+// =============================================
 $requestUri = $_SERVER['REQUEST_URI'];
 $route = parse_url($requestUri, PHP_URL_PATH);
 $route = substr($route, strlen(BASE_PATH));
 $route = trim($route, '/');
 
-// Якщо порожній маршрут — редірект на movements
 if (empty($route)) {
     header('Location: ' . BASE_PATH . '/movements');
     exit;
 }
 
-// =============================================
-// Спеціальні маршрути (для експорту та імпорту)
-// =============================================
-$specialRoutes = [
-    'movements/import' => ['controller' => 'MovementsImport', 'action' => 'import'],
-    'movements/export' => ['controller' => 'MovementsExport', 'action' => 'export'],
-];
+$parts = explode('/', $route);
+$controllerName = ucfirst($parts[0]) . 'Controller';
+$action = $parts[1] ?? 'index';
+$id = $parts[2] ?? null;
 
-if (isset($specialRoutes[$route])) {
-    $controllerName = $specialRoutes[$route]['controller'] . 'Controller';
-    $action = $specialRoutes[$route]['action'];
-    $id = null;
-} else {
-    // Стандартний розбір маршруту
-    $parts = explode('/', $route);
-    $controllerName = ucfirst($parts[0]) . 'Controller';
-    $action = $parts[1] ?? 'index';
-    $id = $parts[2] ?? null;
+// =============================================
+// Підміна контролерів для Movements
+// =============================================
+if ($controllerName === 'MovementsController') {
+    if ($action === 'import') {
+        $controllerName = 'MovementsImportController';
+        $action = 'import';
+        $id = null;
+    } elseif ($action === 'export') {
+        $controllerName = 'MovementsExportController';
+        $action = 'export';
+        $id = null;
+    }
 }
 
+// =============================================
+// Підміна контролерів для Resources
+// =============================================
+if ($controllerName === 'ResourcesController') {
+    if ($action === 'types') {
+        $controllerName = 'ResourceTypesController';
+        $action = 'types';
+        $id = null;
+    } elseif ($action === 'savetype') {
+        $controllerName = 'ResourceTypesController';
+        $action = 'savetype';
+    } elseif ($action === 'deletetype') {
+        $controllerName = 'ResourceTypesController';
+        $action = 'deletetype';
+    } elseif ($action === 'rates') {
+        $controllerName = 'ResourceRatesController';
+        $action = 'rates';
+        $id = null;
+    } elseif ($action === 'addresource') {
+        $controllerName = 'ResourceRatesController';
+        $action = 'addresource';
+        $id = null;
+    } elseif ($action === 'removeresource') {
+        $controllerName = 'ResourceRatesController';
+        $action = 'removeresource';
+        $id = null;
+    } elseif ($action === 'saverate') {
+        $controllerName = 'ResourceRatesController';
+        $action = 'saverate';
+        $id = null;
+    } elseif ($action === 'deleterate') {
+        $controllerName = 'ResourceRatesController';
+        $action = 'deleterate';
+    } elseif ($action === 'export') {
+        $controllerName = 'ResourceExportController';
+        $action = 'export';
+        $id = null;
+    }
+}
+
+// =============================================
 // Перевірка існування контролера
+// =============================================
 $controllerFile = ROOT_PATH . '/controllers/' . $controllerName . '.php';
 if (!file_exists($controllerFile)) {
     http_response_code(404);
@@ -145,7 +188,9 @@ if (!file_exists($controllerFile)) {
     exit;
 }
 
+// =============================================
 // Виконання
+// =============================================
 try {
     $controller = new $controllerName($db);
     
