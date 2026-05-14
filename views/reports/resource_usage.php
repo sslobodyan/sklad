@@ -4,10 +4,12 @@
  */
 // Отримуємо назву вибраного ресурсу для заголовка колонки
 $resourceName = 'Δ ресурсу';
+$resourceUnit = '';
 if ($resourceTypeId > 0) {
     $typeInfo = $this->db->query("SELECT name, unit FROM resource_types WHERE id = ?", [$resourceTypeId])->fetch();
     if ($typeInfo) {
-        $resourceName = $typeInfo['name'] . ' (' . $typeInfo['unit'] . ')';
+        $resourceName = $typeInfo['name'];
+        $resourceUnit = $typeInfo['unit'];
     }
 }
 ?>
@@ -32,6 +34,16 @@ if ($resourceTypeId > 0) {
                 <?php endif; ?>
             </span>
         </button>
+
+<button onclick="window.location.href='<?= BASE_PATH ?>/reports/resource/export?resource_type_id=<?= $resourceTypeId ?>&date_from=<?= $dateFrom ?>&date_to=<?= $dateTo ?>'" class="btn btn-secondary">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    Експорт
+</button>
+
         <button onclick="window.print()" class="btn btn-secondary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
@@ -73,22 +85,23 @@ if ($resourceTypeId > 0) {
 
 <?php if ($resourceTypeId > 0 && !empty($reportData)): ?>
     <div class="card">
-        <div class="table-toolbar" style="margin-bottom: 10px;">
+        <div class="table-toolbar" style="margin-bottom: 10px; padding: 10px;">
             <button type="button" class="btn btn-sm btn-secondary" onclick="expandAll()">▼ Все розгорнути</button>
             <button type="button" class="btn btn-sm btn-secondary" onclick="collapseAll()">▶ Все згорнути</button>
         </div>
         <div class="table-scroll" style="max-height: 70vh; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
             <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
-                <thead style="position: sticky; top: 0; background: #f5f5f5; z-index: 10;">
+                <thead style="position: sticky; top: 0; background: #f5f5f5; z-index: 2;">
                     <tr>
-                        <th style="width: 25%; border: 1px solid #ddd; padding: 10px;">Матеріал / Склад / Дата</th>
-                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;"><?= htmlspecialchars($resourceName) ?></th>
-                        <th style="width: 8%; border: 1px solid #ddd; padding: 10px; text-align: right;">Норма</th>
-                        <th style="width: 8%; border: 1px solid #ddd; padding: 10px; text-align: right;">Поправка</th>
-                        <th style="width: 10%; border: 1px solid #ddd; padding: 10px; text-align: right;">Вх.сальдо</th>
-                        <th style="width: 10%; border: 1px solid #ddd; padding: 10px; text-align: right;">Прихід</th>
-                        <th style="width: 10%; border: 1px solid #ddd; padding: 10px; text-align: right;">Витрата</th>
-                        <th style="width: 10%; border: 1px solid #ddd; padding: 10px; text-align: right;">Вих.сальдо</th>
+                        <th style="width: 20%; border: 1px solid #ddd; padding: 10px;">Матеріал / Склад / Дата</th>
+                        <th style="width: 8%; border: 1px solid #ddd; padding: 10px; text-align: right;">Лічильник (<?= htmlspecialchars($resourceUnit) ?>)</th>
+                        <th style="width: 8%; border: 1px solid #ddd; padding: 10px; text-align: right;"><?= $resourceName.' ('.$resourceUnit.')'?></th>
+                        <th style="width: 7%; border: 1px solid #ddd; padding: 10px; text-align: right;">Норма</th>
+                        <th style="width: 7%; border: 1px solid #ddd; padding: 10px; text-align: right;">Поправка</th>
+                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Вх.сальдо</th>
+                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Прихід</th>
+                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Витрата</th>
+                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Вих.сальдо</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -98,7 +111,8 @@ if ($resourceTypeId > 0) {
                             <td style="border: 1px solid #ddd; padding: 8px; background: #e3f2fd;">
                                 <span class="collapse-icon" style="display: inline-block; width: 16px;">▶</span>
                                 <strong><?= htmlspecialchars($material['material_name']) ?></strong>
-                             </td>
+                            </td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right; background: #e3f2fd;">—</td>
                             <td style="border: 1px solid #ddd; padding: 8px; text-align: right; background: #e3f2fd;"><strong><?= number_format($material['total_delta'], 2) ?></strong></td>
                             <td style="border: 1px solid #ddd; padding: 8px; text-align: right; background: #e3f2fd;">—</td>
                             <td style="border: 1px solid #ddd; padding: 8px; text-align: right; background: #e3f2fd;">—</td>
@@ -117,6 +131,7 @@ if ($resourceTypeId > 0) {
                                         <span class="collapse-icon" style="display: inline-block; width: 16px;">▶</span>
                                         <strong><?= htmlspecialchars($warehouse['warehouse_name']) ?></strong>
                                     </td>
+                                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; background: #f5f5f5;">—</td>
                                     <td style="border: 1px solid #ddd; padding: 8px; text-align: right; background: #f5f5f5;"><?= number_format($warehouse['total_delta'], 2) ?></td>
                                     <td style="border: 1px solid #ddd; padding: 8px; text-align: right; background: #f5f5f5;">—</td>
                                     <td style="border: 1px solid #ddd; padding: 8px; text-align: right; background: #f5f5f5;">—</td>
@@ -139,6 +154,7 @@ if ($resourceTypeId > 0) {
                                                     <span style="font-size: 0.85em; color: #888; margin-left: 8px;"><?= htmlspecialchars($row['note']) ?></span>
                                                 <?php endif; ?>
                                             </td>
+                                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;"><?= $row['reading'] ?></td>
                                             <td style="border: 1px solid #ddd; padding: 8px; text-align: right;"><?= $row['delta'] ?></td>
                                             <td style="border: 1px solid #ddd; padding: 8px; text-align: right;"><?= $row['rate'] ?></td>
                                             <td style="border: 1px solid #ddd; padding: 8px; text-align: right;"><?= $row['correction_pct'] ?></td>
@@ -156,6 +172,7 @@ if ($resourceTypeId > 0) {
                 <tfoot>
                     <tr style="background: #e8f0fe;">
                         <th style="border: 1px solid #ddd; padding: 10px;">Загальний підсумок</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">—</th>
                         <th style="border: 1px solid #ddd; padding: 10px; text-align: right;"><?= number_format($totalDelta, 2) ?></th>
                         <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">—</th>
                         <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">—</th>
@@ -192,9 +209,8 @@ if ($resourceTypeId > 0) {
 
 <script>
 function expandAll() {
-    document.querySelectorAll('.detail-group, tbody[id^="material-"], tbody[id^="warehouse-"]').forEach(function(el) {
-        if (el.tagName === 'TBODY') el.style.display = '';
-        else if (el.classList.contains('detail-group')) el.style.display = '';
+    document.querySelectorAll('tbody[id^="material-"], tbody[id^="warehouse-"]').forEach(function(el) {
+        el.style.display = '';
     });
     document.querySelectorAll('.collapse-icon').forEach(function(icon) {
         icon.textContent = '▼';
@@ -202,9 +218,8 @@ function expandAll() {
 }
 
 function collapseAll() {
-    document.querySelectorAll('.detail-group, tbody[id^="material-"], tbody[id^="warehouse-"]').forEach(function(el) {
-        if (el.tagName === 'TBODY' && el.id !== '') el.style.display = 'none';
-        else if (el.classList.contains('detail-group')) el.style.display = 'none';
+    document.querySelectorAll('tbody[id^="material-"], tbody[id^="warehouse-"]').forEach(function(el) {
+        if (el.id !== '') el.style.display = 'none';
     });
     document.querySelectorAll('.collapse-icon').forEach(function(icon) {
         icon.textContent = '▶';
@@ -215,7 +230,6 @@ document.querySelectorAll('.group-row').forEach(function(row) {
     var icon = row.querySelector('.collapse-icon');
     if (!icon) return;
     
-    var cells = row.querySelectorAll('td');
     var targetId = row.dataset.target;
     if (!targetId) return;
     
@@ -233,9 +247,6 @@ document.querySelectorAll('.group-row').forEach(function(row) {
         }
     });
 });
-
-// Додаємо стилі для випадаючого списку
-document.querySelector('.autocomplete')?.setAttribute('style', 'position: relative; z-index: 100;');
 </script>
 
 <style>

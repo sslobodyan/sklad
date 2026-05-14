@@ -186,6 +186,11 @@ if ($controllerName === 'ReportsController') {
         $action = 'index';
         $id = null;
     }
+    if ($action === 'resource_export') {
+        $controllerName = 'ResourceUsageExportController';
+        $action = 'export';
+        $id = null;
+    }
 }
 
 // =============================================
