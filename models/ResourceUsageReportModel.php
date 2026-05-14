@@ -66,93 +66,24 @@ class ResourceUsageReportModel extends Model
     
     private function getWarehouseData(int $warehouseId, int $materialId, int $resourceTypeId, string $dateFrom, string $dateTo, float $rate): array
     {
-        // Отримуємо всі resource_logs за період
-        $logs = $this->db->query(
-            "SELECT rl.id, rl.log_date, rl.reading, rl.delta, rl.correction_pct, rl.note,
-                    rt.format, rt.unit
-             FROM resource_logs rl
-             JOIN resource_types rt ON rl.resource_type_id = rt.id
-             WHERE rl.warehouse_id = ? 
-               AND rl.resource_type_id = ?
-               AND rl.log_date >= ? 
-               AND rl.log_date <= ?
-               AND rl.delta IS NOT NULL
-             ORDER BY rl.log_date ASC, rl.id ASC",
-            [$warehouseId, $resourceTypeId, $dateFrom, $dateTo]
+        // Отримуємо ВСІ movements для складу та матеріалу за період
+        // Беремо дані безпосередньо з movements: resource_delta, resource_rate, resource_correction
+        $movements = $this->db->query(
+            "SELECT m.*, 
+                    m.resource_delta, 
+                    m.resource_rate, 
+                    m.resource_correction,
+                    m.resource_value
+             FROM movements m
+             WHERE (m.warehouse_to_id = ? OR m.warehouse_from_id = ?)
+               AND m.material_id = ?
+               AND m.movement_date >= ?
+               AND m.movement_date <= ?
+             ORDER BY m.movement_date ASC, m.id ASC",
+            [$warehouseId, $warehouseId, $materialId, $dateFrom, $dateTo]
         )->fetchAll();
         
-        // Отримуємо всі надходження (рухи, де наш склад отримувач)
-        $incomings = $this->db->query(
-            "SELECT movement_date, SUM(quantity) as total_quantity
-             FROM movements
-             WHERE warehouse_to_id = ? 
-               AND material_id = ?
-               AND movement_date >= ?
-               AND movement_date <= ?
-             GROUP BY movement_date
-             ORDER BY movement_date ASC",
-            [$warehouseId, $materialId, $dateFrom, $dateTo]
-        )->fetchAll();
-        
-        // Перетворюємо масив надходжень для швидкого доступу
-        $incomingByDate = [];
-        foreach ($incomings as $inc) {
-            $incomingByDate[$inc['movement_date']] = (float)$inc['total_quantity'];
-        }
-        
-        // Отримуємо ручні списання (не пов'язані з ресурсом)
-        $manualOutgoings = $this->db->query(
-            "SELECT movement_date, SUM(quantity) as total_quantity
-             FROM movements
-             WHERE warehouse_from_id = ? 
-               AND material_id = ?
-               AND movement_date >= ?
-               AND movement_date <= ?
-               AND resource_log_id IS NULL
-             GROUP BY movement_date
-             ORDER BY movement_date ASC",
-            [$warehouseId, $materialId, $dateFrom, $dateTo]
-        )->fetchAll();
-        
-        $manualByDate = [];
-        foreach ($manualOutgoings as $manual) {
-            $manualByDate[$manual['movement_date']] = (float)$manual['total_quantity'];
-        }
-        
-        // Збираємо всі унікальні дати з resource_logs
-        $dates = [];
-        foreach ($logs as $log) {
-            $dates[$log['log_date']] = [
-                'log' => $log,
-                'incoming' => $incomingByDate[$log['log_date']] ?? 0,
-                'manual' => $manualByDate[$log['log_date']] ?? 0
-            ];
-        }
-        
-        // Також додаємо дати, де є тільки надходження або ручні списання, але немає resource_logs
-        foreach ($incomingByDate as $date => $qty) {
-            if (!isset($dates[$date])) {
-                $dates[$date] = [
-                    'log' => null,
-                    'incoming' => $qty,
-                    'manual' => $manualByDate[$date] ?? 0
-                ];
-            }
-        }
-        foreach ($manualByDate as $date => $qty) {
-            if (!isset($dates[$date])) {
-                $dates[$date] = [
-                    'log' => null,
-                    'incoming' => $incomingByDate[$date] ?? 0,
-                    'manual' => $qty
-                ];
-            }
-        }
-        
-        // Сортуємо за датою
-        ksort($dates);
-        
-        // Розраховуємо баланс
+        // Розраховуємо баланс накопичувально
         $balance = $this->getBalanceBeforeDate($warehouseId, $materialId, $dateFrom);
         $openingBalance = $balance;
         
@@ -161,55 +92,72 @@ class ResourceUsageReportModel extends Model
         $totalIncoming = 0;
         $totalConsumed = 0;
         
-        foreach ($dates as $date => $data) {
-            $log = $data['log'];
-            $incomingQty = $data['incoming'];
-            $manualQty = $data['manual'];
-            
-            $delta = 0;
-            $reading = '';
-            $correctionPct = 0;
-            $note = '';
-            $format = 'dec2';
-            $consumedByResource = 0;
-            
-            if ($log) {
-                $delta = (float)$log['delta'];
-                $correctionPct = (float)$log['correction_pct'];
-                $correctionMul = 1 + $correctionPct / 100;
-                $consumedByResource = round($delta * $rate * $correctionMul, 2);
-                $reading = $this->formatValue($log['reading'], $log['format'] ?? 'dec2');
-                $format = $log['format'] ?? 'dec2';
-                $note = $log['note'] ?? '';
-            }
-            
-            // Загальне списання = ресурсне + ручне
-            $totalOutgoing = $consumedByResource + $manualQty;
-            
-            // Оновлюємо баланс
+        foreach ($movements as $movement) {
+            $date = $movement['movement_date'];
             $openingBalanceDay = $balance;
-            $balance = $balance + $incomingQty - $totalOutgoing;
             
-            // Додаємо рядок тільки якщо є хоч якась зміна
-            if ($incomingQty != 0 || $totalOutgoing != 0 || $log) {
+            // Визначаємо тип руху
+            if ($movement['warehouse_to_id'] == $warehouseId) {
+                // НАДХОДЖЕННЯ на склад
+                $quantity = (float)$movement['quantity'];
+                $balance += $quantity;
+                $totalIncoming += $quantity;
+                
+                $rows[] = [
+                    'date' => $date,
+                    'reading' => '',
+                    'delta' => '',
+                    'rate' => '',
+                    'correction_pct' => '',
+                    'opening_balance' => $openingBalanceDay,
+                    'incoming' => number_format($quantity, 2),
+                    'consumed' => '',
+                    'closing_balance' => $balance,
+                    'note' => $movement['note'] ?? 'Надходження',
+                    'has_manual' => false
+                ];
+            }
+            elseif ($movement['warehouse_from_id'] == $warehouseId) {
+                // СПИСАННЯ зі складу
+                $quantity = (float)$movement['quantity'];
+                $isManual = ($movement['resource_log_id'] === null);
+                
+                $balance -= $quantity;
+                $totalConsumed += $quantity;
+                
+                // Беремо дані безпосередньо з руху
+                $delta = 0;
+                $reading = '';
+                $resourceRate = '';
+                $correctionDisplay = '';
+                $note = $movement['note'] ?? '';
+                
+                if (!$isManual) {
+                    // Дані з полів руху (заповнюються при створенні автоматичних записів)
+                    $delta = (float)($movement['resource_delta'] ?? 0);
+                    $totalDelta += $delta;
+                    
+                    $reading = $this->formatValue($movement['resource_value'] ?? null, 'dec2');
+                    $resourceRate = number_format((float)($movement['resource_rate'] ?? 0), 4);
+                    
+                    $correction = (float)($movement['resource_correction'] ?? 0);
+                    $correctionDisplay = $correction != 0 ? ($correction > 0 ? '+' : '') . $correction . '%' : '';
+                }
+                
                 $rows[] = [
                     'date' => $date,
                     'reading' => $reading,
-                    'delta' => $delta > 0 ? $this->formatDelta($delta, $format) : '',
-                    'rate' => $rate,
-                    'correction_pct' => $correctionPct != 0 ? ($correctionPct > 0 ? '+' : '') . $correctionPct . '%' : '',
+                    'delta' => !$isManual ? $this->formatDelta($delta, 'dec2') : '',
+                    'rate' => $resourceRate,
+                    'correction_pct' => $correctionDisplay,
                     'opening_balance' => $openingBalanceDay,
-                    'incoming' => $incomingQty != 0 ? number_format($incomingQty, 2) : '',
-                    'consumed' => $totalOutgoing != 0 ? number_format($totalOutgoing, 2) : '',
+                    'incoming' => '',
+                    'consumed' => number_format($quantity, 2),
                     'closing_balance' => $balance,
                     'note' => $note,
-                    'has_manual' => $manualQty > 0
+                    'has_manual' => $isManual
                 ];
             }
-            
-            $totalDelta += $delta;
-            $totalIncoming += $incomingQty;
-            $totalConsumed += $totalOutgoing;
         }
         
         $closingBalance = $balance;
