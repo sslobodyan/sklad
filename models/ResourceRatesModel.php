@@ -87,7 +87,6 @@ class ResourceRatesModel extends Model
 
 public function getWarehousesByResourceType(int $resourceTypeId): array
 {
-    to_log('ResourceRatesModel::getWarehousesByResourceType called with id: ' . $resourceTypeId);
     
     $result = $this->db->query(
         "SELECT DISTINCT w.id, w.name
@@ -97,8 +96,6 @@ public function getWarehousesByResourceType(int $resourceTypeId): array
          ORDER BY w.name",
         [$resourceTypeId]
     )->fetchAll();
-    
-    to_log('getWarehousesByResourceType result count: ' . count($result));
     
     return $result;
 }

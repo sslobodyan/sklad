@@ -15,8 +15,8 @@ if ($resourceTypeId > 0) {
 ?>
 <div class="page-header">
     <div>
-        <h1 class="page-title">Звіт по використанню ресурсів</h1>
-        <p class="page-subtitle">Деталізація витрати ресурсів по матеріалах та складах</p>
+        <h1 class="page-title">Звіт по використанню ресурсу</h1>
+        <p class="page-subtitle">Деталізація витрати ресурсу по матеріалах та складах</p>
     </div>
     <div class="header-buttons">
         <button class="date-range-btn" onclick="toggleDatePanel(this)" title="Глобальний період">
@@ -96,12 +96,12 @@ if ($resourceTypeId > 0) {
                         <th style="width: 20%; border: 1px solid #ddd; padding: 10px;">Матеріал / Склад / Дата</th>
                         <th style="width: 8%; border: 1px solid #ddd; padding: 10px; text-align: right;">Лічильник (<?= htmlspecialchars($resourceUnit) ?>)</th>
                         <th style="width: 8%; border: 1px solid #ddd; padding: 10px; text-align: right;"><?= $resourceName.' ('.$resourceUnit.')'?></th>
-                        <th style="width: 7%; border: 1px solid #ddd; padding: 10px; text-align: right;">Норма</th>
-                        <th style="width: 7%; border: 1px solid #ddd; padding: 10px; text-align: right;">Поправка</th>
-                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Вх.сальдо</th>
-                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Прихід</th>
-                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Витрата</th>
-                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Вих.сальдо</th>
+                        <th style="width: 7%; border: 1px solid #ddd; padding: 10px; text-align: right;">Норма списання</th>
+                        <th style="width: 7%; border: 1px solid #ddd; padding: 10px; text-align: right;">Поправка,%</th>
+                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Вхідне сальдо</th>
+                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Надійшло</th>
+                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Списано</th>
+                        <th style="width: 9%; border: 1px solid #ddd; padding: 10px; text-align: right;">Вихідне сальдо</th>
                     </tr>
                 </thead>
                 <tbody>

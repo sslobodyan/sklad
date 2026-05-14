@@ -8,7 +8,7 @@
 return [
     // Секрет для перевірки підпису HMAC
     // ОБОВ'ЯЗКОВО змініть на значення з Nextcloud!
-    'secret' => '12Y8BmV18a4a2goAbFYu4ImzPcVevXroe/DFQYG0aWYdxrSf',
+    'secret' => '12Y8BmVI8a4a2goAbFYu4ImzPcVevXroe/DFQYG0aWYdxrSf',
     // Максимальний час життя підпису (секунди)
     // Захист від replay-атак
     'max_age' => 18000,

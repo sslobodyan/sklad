@@ -71,7 +71,7 @@ class ResourceUsageExportController extends Controller
         $sheet1Rows[] = ['Ресурс:', $resourceName . ' (' . $resourceUnit . ')'];
         $sheet1Rows[] = ['Період:', date('d.m.Y', strtotime($dateFrom)) . ' - ' . date('d.m.Y', strtotime($dateTo))];
         $sheet1Rows[] = [];
-        $sheet1Rows[] = ['Матеріал / Склад / Дата', 'Показник (' . $resourceUnit . ')', 'Δ ресурсу', 'Норма', 'Поправка', 'Вх.сальдо', 'Прихід', 'Витрата', 'Вих.сальдо'];
+        $sheet1Rows[] = ['Матеріал / Склад / Дата', 'Лічильник (' . $resourceUnit . ')', $resourceName, 'Норма', 'Поправка', 'Вх.сальдо', 'Прихід', 'Витрата', 'Залишок'];
         
         foreach ($reportData as $material) {
             // Заголовок матеріалу
@@ -109,7 +109,7 @@ class ResourceUsageExportController extends Controller
         
         // Лист 2: Плоска таблиця для зведеної таблиці
         $sheet2Rows = [];
-        $sheet2Rows[] = ['Матеріал', 'Склад', 'Дата', 'Показник (' . $resourceUnit . ')', 'Δ ресурсу', 'Норма', 'Поправка', 'Вх.сальдо', 'Надходження', 'Списання', 'Вих.сальдо'];
+        $sheet2Rows[] = ['Матеріал', 'Склад', 'Дата', 'Лічильник (' . $resourceUnit . ')', $resourceName , 'Норма списання', 'Поправка, %', 'Вх.сальдо', 'Надходження', 'Списання', 'Залишок'];
         
         foreach ($reportData as $material) {
             foreach ($material['warehouses'] as $warehouse) {

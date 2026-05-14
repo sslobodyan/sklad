@@ -113,8 +113,6 @@ $route = parse_url($requestUri, PHP_URL_PATH);
 $route = substr($route, strlen(BASE_PATH));
 $route = trim($route, '/');
 
-to_log('$requestUri = ',$requestUri);
-
 if (empty($route)) {
     header('Location: ' . BASE_PATH . '/movements');
     exit;
@@ -181,14 +179,15 @@ if ($controllerName === 'ResourcesController') {
 }
 
 if ($controllerName === 'ReportsController') {
-    if ($action === 'resource') {
-        $controllerName = 'ResourceReportController';
-        $action = 'index';
-        $id = null;
-    }
-    if ($action === 'resource_export') {
+    if ($action === 'resource' && $id === 'export') {
+        // URL: /reports/resource/export
         $controllerName = 'ResourceUsageExportController';
         $action = 'export';
+        $id = null;
+    } elseif ($action === 'resource') {
+        // URL: /reports/resource
+        $controllerName = 'ResourceReportController';
+        $action = 'index';
         $id = null;
     }
 }
@@ -242,5 +241,5 @@ function to_log($message, $data = null) {
     $output .= "\n";
     
     // Записуємо у файл debug.log (дописує в кінець файлу)
-    //file_put_contents($file, $output, FILE_APPEND);
+    file_put_contents($file, $output, FILE_APPEND);
 }

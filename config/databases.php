@@ -14,7 +14,7 @@ return [
         'host' => 'localhost',
         'name' => 'sklad',
         'user' => 'sklad',
-        'pass' => '1qazxsw2#',
+        'pass' => '1qazxsw2',
     ],
     // Приклад: група "Бригада1" → окрема база
     // 'Бригада1' => [

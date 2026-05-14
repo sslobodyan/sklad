@@ -18,18 +18,23 @@ class ResourceReportController extends Controller
 
     public function index(): void
     {
-        to_log('=== ResourceReportController::index() START ===');
+
+    $resourceTypeId = (int)$this->get('resource_type_id', 0);
+    
+    // Якщо date_from/date_to не передані в URL, беремо з глобального діапазону
+    $dateFrom = $this->get('date_from');
+    $dateTo = $this->get('date_to');
+    
+    if (empty($dateFrom)) {
+        $dateFrom = SettingsController::getDateFrom();
+    }
+    if (empty($dateTo)) {
+        $dateTo = SettingsController::getDateTo();
+    }
         
         $resourceTypeId = (int)$this->get('resource_type_id', 0);
-        $dateFrom = $this->get('date_from', SettingsController::getDateFrom());
-        $dateTo = $this->get('date_to', SettingsController::getDateTo());
-
-        to_log('resourceTypeId: ' . $resourceTypeId);
-        to_log('dateFrom: ' . $dateFrom);
-        to_log('dateTo: ' . $dateTo);
 
         $types = $this->typesModel->getTypes();
-        to_log('types count: ' . count($types));
         
         $reportData = null;
         $totalDelta = 0;
@@ -41,7 +46,6 @@ class ResourceReportController extends Controller
         if ($resourceTypeId > 0) {
             $warehouses = $this->ratesModel->getWarehousesByResourceType($resourceTypeId);
             $warehouseIds = array_column($warehouses, 'id');
-            to_log('warehouseIds: ' . json_encode($warehouseIds));
             
             if (!empty($warehouseIds)) {
                 $reportData = $this->reportModel->getDetailedReport(
@@ -50,7 +54,6 @@ class ResourceReportController extends Controller
                     $dateFrom,
                     $dateTo
                 );
-                to_log('reportData count: ' . count($reportData));
                 
                 foreach ($reportData as $material) {
                     $totalDelta += $material['total_delta'];
@@ -59,7 +62,6 @@ class ResourceReportController extends Controller
                     $totalConsumed += $material['total_consumed'];
                     $totalClosing += $material['total_closing'];
                 }
-                to_log("Totals - delta:{$totalDelta}, opening:{$totalOpening}, incoming:{$totalIncoming}, consumed:{$totalConsumed}, closing:{$totalClosing}");
             }
         }
 
@@ -78,6 +80,5 @@ class ResourceReportController extends Controller
             'activePage' => 'reports',
         ]);
         
-        to_log('=== ResourceReportController::index() END ===');
     }
 }
