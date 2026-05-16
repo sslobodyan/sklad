@@ -88,7 +88,7 @@ function formatNum($n) {
 
 <div class="card card-stretch">
     <div class="table-scroll">
-        <table class="data-table" id="reportTable">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th class="col-expand"></th>
@@ -108,7 +108,21 @@ function formatNum($n) {
                     $totalOut += $row['outgoing'];
                     $totalClosing += $row['closing_balance'];
                     $rowId = 'mat-' . $row['material_id'];
-
+                ?>
+                <tr class="expandable report-summary-row" data-row-id="<?= $rowId ?>" onclick="toggleRow(this)">
+                    <td class="col-expand">
+                        <?php if (!empty($row['details'])): ?>
+                        <span class="expand-icon" id="icon-<?= $rowId ?>">▶</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="font-medium"><?= htmlspecialchars($row['material_name']) ?></td>
+                    <td class="text-right font-mono"><?= formatNum($row['opening_balance']) ?></td>
+                    <td class="text-right font-mono"><?= formatNum($row['incoming']) ?></td>
+                    <td class="text-right font-mono"><?= formatNum($row['outgoing']) ?></td>
+                    <td class="text-right font-mono <?= $row['closing_balance'] < 0 ? 'balance-negative' : '' ?>"><?= formatNum($row['closing_balance']) ?></td>
+                </tr>
+                <?php if (!empty($row['details'])): ?>
+                <?php 
                     $detailRows = [];
                     $runningBalance = (float)$row['opening_balance'];
                     foreach ($row['details'] as $detail) {
@@ -118,40 +132,31 @@ function formatNum($n) {
                     }
                     $detailRows = array_reverse($detailRows);
                 ?>
-                <tr class="expandable report-summary-row" data-row-id="<?= $rowId ?>" onclick="toggleRow(this)">
-                    <td class="col-expand">
-                        <?php if (!empty($row['details'])): ?>
-                        <span class="expand-icon" id="icon-<?= $rowId ?>">▶</span>
-                        <?php endif; ?>
-                    </td>
-                    <td><?= htmlspecialchars($row['material_name']) ?></td>
-                    <td class="text-right font-mono"><?= formatNum($row['opening_balance']) ?></td>
-                    <td class="text-right font-mono"><?= formatNum($row['incoming']) ?></td>
-                    <td class="text-right font-mono"><?= formatNum($row['outgoing']) ?></td>
-                    <td class="text-right font-mono <?= $row['closing_balance'] < 0 ? 'balance-negative' : '' ?>"><?= formatNum($row['closing_balance']) ?></td>
-                </tr>
-                <?php foreach ($detailRows as $d): ?>
-                <tr class="detail-row" data-parent="<?= $rowId ?>" style="display:none" ondblclick="goToMovement(<?= $d['id'] ?>)">
-                    <td class="col-expand"></td>
-                    <td class="detail-cell">
-                        <span class="text-muted font-mono"><?= formatDateUa($d['date']) ?></span>
-                        <span class="badge <?= $d['incoming'] > 0 ? 'badge-in' : 'badge-out' ?>"><?= $d['type'] ?></span>
-                        <span class="text-muted"><?= htmlspecialchars($d['counterpart']) ?></span>
-                        <?php if ($d['note']): ?>
-                        <span class="text-muted detail-note"> — <?= htmlspecialchars($d['note']) ?></span>
-                        <?php endif; ?>
-                    </td>
-                    <td class="text-right font-mono"><?= $d['incoming'] > 0 ? formatNum($d['incoming']) : '' ?></td>
-                    <td class="text-right font-mono"><?= $d['outgoing'] > 0 ? formatNum($d['outgoing']) : '' ?></td>
-                    <td class="text-right font-mono <?= $d['balance_after'] < 0 ? 'balance-negative' : '' ?>"><?= formatNum($d['balance_after']) ?></td>
-                    <td class="text-right font-mono"></td>
-                </tr>
-                <?php endforeach; ?>
+
+<?php foreach ($detailRows as $d): ?>
+<tr class="detail-row" data-parent="<?= $rowId ?>" style="display:none" ondblclick="goToMovement(<?= $d['id'] ?>)">
+    <td class="col-expand"></td>
+    <td class="detail-cell">
+        <span class="text-muted font-mono"><?= formatDateUa($d['date']) ?></span>
+        <span class="badge <?= $d['incoming'] > 0 ? 'badge-in' : 'badge-out' ?>"><?= $d['type'] ?></span>
+        <span class="text-muted"><?= htmlspecialchars($d['counterpart']) ?></span>
+        <?php if ($d['note']): ?>
+        <span class="text-muted detail-note"> — <?= htmlspecialchars($d['note']) ?></span>
+        <?php endif; ?>
+    </td>
+    <td class="text-right">—</td>                               <!-- Вх. сальдо (не показуємо) -->
+    <td class="text-right"><?= $d['incoming'] > 0 ? number_format($d['incoming'], 2) : '—' ?></td>  <!-- Прихід -->
+    <td class="text-right"><?= $d['outgoing'] > 0 ? number_format($d['outgoing'], 2) : '—' ?></td>  <!-- Витрата -->
+    <td class="text-right <?= $d['balance_after'] < 0 ? 'balance-negative' : '' ?>"><?= number_format($d['balance_after'], 2) ?></td>  <!-- Вих. сальдо -->
+</tr>
+<?php endforeach; ?>
+
+                <?php endif; ?>
                 <?php endforeach; ?>
                 
                 <tr class="totals-row report-summary-row">
                     <td class="col-expand"></td>
-                    <td>Разом</td>
+                    <td class="font-bold">Разом</td>
                     <td class="text-right font-mono"><?= formatNum($totalOpening) ?></td>
                     <td class="text-right font-mono"><?= formatNum($totalIn) ?></td>
                     <td class="text-right font-mono"><?= formatNum($totalOut) ?></td>
