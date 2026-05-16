@@ -2,12 +2,39 @@
    Основний лейаут
    ================================================ */
 
-.app {
-    height: calc(100vh - var(--nc-header));
-    display: flex;
-    flex-direction: column;
+:root {
+    --blue: #0082c9;
+    --blue-dark: #006aa3;
+    --blue-light: #e8f4fd;
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --border: #dce0e5;
+    --text: #1a1a1a;
+    --text-secondary: #5c5c5c;
+    --success: #2e7d32;
+    --danger: #c62828;
+    --warning: #f57c00;
+    --sidebar-width: 200px;
+    --nc-header: 50px;
 }
 
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Кнопка-гамбургер */
 .sidebar-toggle {
     display: none;
     position: fixed;
@@ -17,14 +44,20 @@
     background: white;
     border: 1px solid var(--border);
     color: var(--text-secondary);
-    padding: 6px;
+    padding: 6px 10px;
     cursor: pointer;
     border-radius: 6px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    font-size: 18px;
+    font-weight: bold;
 }
 
-.sidebar-toggle:hover {
-    background: #f5f5f5;
+.sidebar-toggle:hover { background: #f5f5f5; }
+
+.app {
+    height: calc(100vh - var(--nc-header));
+    display: flex;
+    flex-direction: column;
 }
 
 .app-body {
@@ -42,13 +75,9 @@
     z-index: 50;
 }
 
-.sidebar-nav {
-    padding: 8px 0;
-}
+.sidebar-nav { padding: 8px 0; }
 
-.nav-group {
-    margin-bottom: 4px;
-}
+.nav-group { margin-bottom: 4px; }
 
 .nav-group-label {
     padding: 8px 14px 4px;
@@ -70,18 +99,12 @@
     position: relative;
     transition: background 0.1s;
 }
-
-.nav-item:hover {
-    background: #f5f7fa;
-    text-decoration: none;
-}
-
+.nav-item:hover { background: #f5f7fa; text-decoration: none; }
 .nav-item.active {
     background: var(--blue-light);
     color: var(--blue);
     font-weight: 500;
 }
-
 .nav-item.active::before {
     content: '';
     position: absolute;
@@ -92,14 +115,8 @@
     background: var(--blue);
     border-radius: 0 2px 2px 0;
 }
-
-.nav-item svg {
-    color: var(--text-secondary);
-}
-
-.nav-item.active svg {
-    color: var(--blue);
-}
+.nav-item svg { color: var(--text-secondary); }
+.nav-item.active svg { color: var(--blue); }
 
 .main {
     flex: 1;
@@ -132,4 +149,42 @@
     color: var(--text-secondary);
     border-top: 1px solid #f0f2f5;
     background: #fafbfc;
+}
+
+@media (max-width: 900px) {
+    .sidebar-toggle {
+        display: block;
+    }
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        transform: translateX(-100%);
+        transition: transform 0.2s;
+        z-index: 61;
+    }
+    .sidebar.open {
+        transform: translateX(0);
+    }
+    .app {
+        height: auto;
+        min-height: calc(100vh - var(--nc-header));
+    }
+    .main {
+        padding: 8px;
+        overflow: auto !important;
+        display: block !important;
+        height: auto !important;
+    }
+    .main > .card-stretch {
+        display: block !important;
+        flex: none !important;
+        min-height: 0 !important;
+    }
+    .card-stretch > .table-scroll {
+        max-height: none !important;
+        overflow-x: auto;
+        overflow-y: visible;
+    }
 }

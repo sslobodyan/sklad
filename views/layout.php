@@ -50,6 +50,8 @@
 <body>
     <div class="flash-container" id="flashContainer"></div>
 
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">☰</button>
+
     <script>
         window.basePath = <?= json_encode($basePath) ?>;
         window.flashMessages = <?= json_encode($flashMessages ?? []) ?>;
@@ -58,24 +60,17 @@
         window.applyDateRange = function() {
             var dateFrom = document.getElementById('dateFrom').value;
             var dateTo = document.getElementById('dateTo').value;
-
             if (!dateFrom || !dateTo) {
                 alert('Оберіть обидві дати');
                 return;
             }
-
             fetch(window.basePath + '/settings/dates', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo)
             })
-            .then(function() {
-                closeDatePanel();
-                location.reload();
-            })
-            .catch(function() {
-                alert('Помилка збереження');
-            });
+            .then(function() { closeDatePanel(); location.reload(); })
+            .catch(function() { alert('Помилка збереження'); });
         };
 
         function closeDatePanel() {
@@ -226,38 +221,29 @@
         <div class="modal-body" id="modalBody"></div>
     </div>
 
-    <!-- Core -->
     <script src="<?= $basePath ?>/assets/js/core/utils.js"></script>
     <script src="<?= $basePath ?>/assets/js/core/sidebar.js"></script>
     <script src="<?= $basePath ?>/assets/js/core/date-panel.js"></script>
     <script src="<?= $basePath ?>/assets/js/core/modal.js"></script>
     <script src="<?= $basePath ?>/assets/js/core/ajax.js"></script>
-
-    <!-- Components -->
     <script src="<?= $basePath ?>/assets/js/components/autocomplete.js"></script>
     <script src="<?= $basePath ?>/assets/js/components/type-indicator.js"></script>
-
-    <!-- Modals -->
     <script src="<?= $basePath ?>/assets/js/modals/warehouse.js"></script>
     <script src="<?= $basePath ?>/assets/js/modals/material.js"></script>
     <script src="<?= $basePath ?>/assets/js/modals/movement.js"></script>
     <script src="<?= $basePath ?>/assets/js/modals/delete.js"></script>
     <script src="<?= $basePath ?>/assets/js/modals/import.js"></script>
-
-    <!-- Main -->
     <script src="<?= $basePath ?>/assets/js/main.js"></script>
 
     <script>
         (function() {
             var container = document.getElementById('flashContainer');
             var messages = window.flashMessages || [];
-
             function showFlash(message, type) {
                 var icons = { success: '✓', error: '⚠', info: 'ℹ', warning: '⚡' };
                 var div = document.createElement('div');
                 div.className = 'flash-message ' + type;
-                div.innerHTML =
-                    '<span class="flash-icon">' + (icons[type] || 'ℹ') + '</span>' +
+                div.innerHTML = '<span class="flash-icon">' + (icons[type] || 'ℹ') + '</span>' +
                     '<span class="flash-text">' + escapeHtml(message) + '</span>' +
                     '<button class="flash-close" onclick="this.parentElement.remove()">&times;</button>';
                 container.appendChild(div);
@@ -267,13 +253,11 @@
                     setTimeout(function() { div.remove(); }, 300);
                 }, 4000);
             }
-
             function escapeHtml(text) {
                 var div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
             }
-
             messages.forEach(function(msg) { showFlash(msg.message, msg.type); });
         })();
     </script>
