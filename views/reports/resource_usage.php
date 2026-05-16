@@ -132,9 +132,9 @@ function formatNum($n) {
             <tbody>
                 <?php foreach ($reportData as $material): ?>
                 <!-- Група матеріалу -->
-                <tr class="expandable report-summary-row" onclick="toggleRow('material-<?= $material['material_id'] ?>')">
+                <tr class="expandable report-summary-row material-row" data-material-id="<?= $material['material_id'] ?>" onclick="toggleMaterial(<?= $material['material_id'] ?>)">
                     <td class="col-expand">
-                        <span class="expand-icon" id="icon-material-<?= $material['material_id'] ?>">▶</span>
+                        <span class="expand-icon" id="icon-material-<?= $material['material_id'] ?>">▼</span>
                     </td>
                     <td class="font-medium"><?= htmlspecialchars($material['material_name']) ?></td>
                     <td class="text-right">—</td>
@@ -147,51 +147,47 @@ function formatNum($n) {
                     <td class="text-right font-bold"><?= formatNum($material['total_closing']) ?></td>
                 </tr>
                 
-                <!-- Деталізація по складах -->
-                <tbody class="detail-group" id="material-<?= $material['material_id'] ?>" style="display:none">
-                    <?php foreach ($material['warehouses'] as $warehouse): ?>
-                    <!-- Заголовок складу -->
-                    <tr class="expandable detail-summary-row" onclick="toggleRow('warehouse-<?= $material['material_id'] ?>-<?= $warehouse['warehouse_id'] ?>')">
-                        <td class="col-expand">
-                            <span class="expand-icon" id="icon-warehouse-<?= $material['material_id'] ?>-<?= $warehouse['warehouse_id'] ?>">▶</span>
-                        </td>
-                        <td class="detail-cell">
-                            <strong><?= htmlspecialchars($warehouse['warehouse_name']) ?></strong>
-                        </td>
-                        <td class="text-right">—</td>
-                        <td class="text-right"><?= formatNum($warehouse['total_delta']) ?></td>
-                        <td class="text-right">—</td>
-                        <td class="text-right">—</td>
-                        <td class="text-right"><?= formatNum($warehouse['opening_balance']) ?></td>
-                        <td class="text-right"><?= formatNum($warehouse['total_incoming']) ?></td>
-                        <td class="text-right"><?= formatNum($warehouse['total_consumed']) ?></td>
-                        <td class="text-right"><?= formatNum($warehouse['closing_balance']) ?></td>
-                    </tr>
-                    
-                    <!-- Деталізація по днях -->
-                    <tbody class="detail-group" id="warehouse-<?= $material['material_id'] ?>-<?= $warehouse['warehouse_id'] ?>" style="display:none">
-                        <?php foreach ($warehouse['rows'] as $row): ?>
-                        <tr class="detail-row">
-                            <td class="col-expand"></td>
-                            <td class="detail-cell">
-                                <?= date('d.m.Y', strtotime($row['date'])) ?>
-                                <?php if (!empty($row['note'])): ?>
-                                <span class="detail-note">(<?= htmlspecialchars($row['note']) ?>)</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-right"><?= $row['reading'] ?></td>
-                            <td class="text-right"><?= $row['delta'] ?></td>
-                            <td class="text-right"><?= $row['rate'] ?></td>
-                            <td class="text-right"><?= $row['correction_pct'] ?></td>
-                            <td class="text-right"><?= formatNum($row['opening_balance']) ?></td>
-                            <td class="text-right incoming"><?= $row['incoming'] ?></td>
-                            <td class="text-right outgoing"><?= $row['consumed'] ?></td>
-                            <td class="text-right balance"><?= formatNum($row['closing_balance']) ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                    <?php endforeach; ?>
-                </tbody>
+                <!-- Склади для цього матеріалу -->
+                <?php foreach ($material['warehouses'] as $warehouse): ?>
+                <!-- Заголовок складу -->
+                <tr class="expandable detail-summary-row warehouse-row" data-material-id="<?= $material['material_id'] ?>" data-warehouse-id="<?= $warehouse['warehouse_id'] ?>" onclick="toggleWarehouse(<?= $material['material_id'] ?>, <?= $warehouse['warehouse_id'] ?>)">
+                    <td class="col-expand">
+                        <span class="expand-icon" id="icon-warehouse-<?= $material['material_id'] ?>-<?= $warehouse['warehouse_id'] ?>">▶</span>
+                    </td>
+                    <td class="detail-cell">
+                        <strong><?= htmlspecialchars($warehouse['warehouse_name']) ?></strong>
+                    </td>
+                    <td class="text-right">—</td>
+                    <td class="text-right"><?= formatNum($warehouse['total_delta']) ?></td>
+                    <td class="text-right">—</td>
+                    <td class="text-right">—</td>
+                    <td class="text-right"><?= formatNum($warehouse['opening_balance']) ?></td>
+                    <td class="text-right"><?= formatNum($warehouse['total_incoming']) ?></td>
+                    <td class="text-right"><?= formatNum($warehouse['total_consumed']) ?></td>
+                    <td class="text-right"><?= formatNum($warehouse['closing_balance']) ?></td>
+                </tr>
+                
+                <!-- Деталі по днях для цього складу -->
+                <?php foreach ($warehouse['rows'] as $row): ?>
+                <tr class="detail-row day-row" data-material-id="<?= $material['material_id'] ?>" data-warehouse-id="<?= $warehouse['warehouse_id'] ?>" style="display:none">
+                    <td class="col-expand"></td>
+                    <td class="detail-cell">
+                        <?= date('d.m.Y', strtotime($row['date'])) ?>
+                        <?php if (!empty($row['note'])): ?>
+                        <span class="detail-note">(<?= htmlspecialchars($row['note']) ?>)</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="text-right"><?= $row['reading'] ?></td>
+                    <td class="text-right"><?= $row['delta'] ?></td>
+                    <td class="text-right"><?= $row['rate'] ?></td>
+                    <td class="text-right"><?= $row['correction_pct'] ?></td>
+                    <td class="text-right"><?= formatNum($row['opening_balance']) ?></td>
+                    <td class="text-right incoming"><?= $row['incoming'] ?></td>
+                    <td class="text-right outgoing"><?= $row['consumed'] ?></td>
+                    <td class="text-right balance"><?= formatNum($row['closing_balance']) ?></td>
+                </tr>
+                <?php endforeach; ?>
+                <?php endforeach; ?>
                 <?php endforeach; ?>
                 
                 <!-- Підсумок -->
@@ -218,32 +214,97 @@ function formatNum($n) {
 </div>
 
 <script>
-function toggleRow(id) {
-    var rows = document.querySelectorAll('#reportTable .detail-group#' + id + ', #reportTable tbody.detail-group#' + id);
-    var icon = document.getElementById('icon-' + id);
-    if (!rows.length) return;
+function toggleMaterial(materialId) {
+    var icon = document.getElementById('icon-material-' + materialId);
+    var warehouses = document.querySelectorAll('.warehouse-row[data-material-id="' + materialId + '"]');
+    var days = document.querySelectorAll('.day-row[data-material-id="' + materialId + '"]');
     
-    var isHidden = rows[0].style.display === 'none';
-    rows.forEach(function(r) { r.style.display = isHidden ? '' : 'none'; });
-    if (icon) icon.classList.toggle('expanded', isHidden);
+    if (warehouses.length === 0) return;
+    
+    // Перевіряємо стан першого складу
+    var isHidden = warehouses[0].style.display === 'none';
+    
+    if (isHidden) {
+        // Розгортаємо склади
+        warehouses.forEach(function(w) { w.style.display = ''; });
+        icon.textContent = '▼';
+        // Дні залишаємо згорнутими
+        days.forEach(function(d) { d.style.display = 'none'; });
+        // Оновлюємо іконки складів
+        document.querySelectorAll('.expand-icon[id^="icon-warehouse-' + materialId + '-"]').forEach(function(ic) {
+            ic.textContent = '▶';
+        });
+    } else {
+        // Згортаємо склади
+        warehouses.forEach(function(w) { w.style.display = 'none'; });
+        icon.textContent = '▶';
+        // Дні теж згортаємо
+        days.forEach(function(d) { d.style.display = 'none'; });
+    }
+}
+
+function toggleWarehouse(materialId, warehouseId) {
+    var icon = document.getElementById('icon-warehouse-' + materialId + '-' + warehouseId);
+    var days = document.querySelectorAll('.day-row[data-material-id="' + materialId + '"][data-warehouse-id="' + warehouseId + '"]');
+    
+    if (days.length === 0) return;
+    
+    var isHidden = days[0].style.display === 'none';
+    
+    if (isHidden) {
+        days.forEach(function(d) { d.style.display = ''; });
+        icon.textContent = '▼';
+    } else {
+        days.forEach(function(d) { d.style.display = 'none'; });
+        icon.textContent = '▶';
+    }
 }
 
 function expandAll() {
-    document.querySelectorAll('#reportTable .detail-group').forEach(function(el) {
-        el.style.display = '';
+    // Розгортаємо всі матеріали (показуємо склади)
+    document.querySelectorAll('.material-row').forEach(function(row) {
+        var materialId = row.dataset.materialId;
+        var icon = document.getElementById('icon-material-' + materialId);
+        var warehouses = document.querySelectorAll('.warehouse-row[data-material-id="' + materialId + '"]');
+        warehouses.forEach(function(w) { w.style.display = ''; });
+        if (icon) icon.textContent = '▼';
     });
-    document.querySelectorAll('#reportTable .expand-icon').forEach(function(icon) {
-        icon.classList.add('expanded');
+    // Розгортаємо всі дні
+    document.querySelectorAll('.day-row').forEach(function(d) {
+        d.style.display = '';
+    });
+    // Оновлюємо всі іконки складів
+    document.querySelectorAll('.expand-icon[id^="icon-warehouse-"]').forEach(function(ic) {
+        ic.textContent = '▼';
     });
 }
 
 function collapseAll() {
-    document.querySelectorAll('#reportTable .detail-group').forEach(function(el) {
-        el.style.display = 'none';
+    // Згортаємо всі дні
+    document.querySelectorAll('.day-row').forEach(function(d) {
+        d.style.display = 'none';
     });
-    document.querySelectorAll('#reportTable .expand-icon').forEach(function(icon) {
-        icon.classList.remove('expanded');
+    // Оновлюємо всі іконки складів
+    document.querySelectorAll('.expand-icon[id^="icon-warehouse-"]').forEach(function(ic) {
+        ic.textContent = '▶';
     });
+    // Матеріали залишаємо розгорнутими (склади видно)
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Початковий стан: склади видно, дні приховані
+    document.querySelectorAll('.warehouse-row').forEach(function(w) {
+        w.style.display = '';
+    });
+    document.querySelectorAll('.day-row').forEach(function(d) {
+        d.style.display = 'none';
+    });
+    document.querySelectorAll('.expand-icon[id^="icon-material-"]').forEach(function(ic) {
+        ic.textContent = '▼';
+    });
+    document.querySelectorAll('.expand-icon[id^="icon-warehouse-"]').forEach(function(ic) {
+        ic.textContent = '▶';
+    });
+});
 </script>
 <?php endif; ?>
