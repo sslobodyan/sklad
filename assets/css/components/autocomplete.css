@@ -40,7 +40,7 @@
 }
 
 .ac-wrap.open.drop-up .ac-display {
-    border-radius: 0 0 6px 6px;
+    border-radius: 6px 6px 0 0;
 }
 
 .ac-text {
@@ -77,7 +77,7 @@
     margin-top: -1px;
     background: white;
     border: 1px solid var(--blue);
-    border-top: 1px solid #eee;
+    border-top: none;
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.12);
@@ -92,7 +92,7 @@
     margin-bottom: -1px;
     border-radius: 8px 8px 0 0;
     border-top: 1px solid var(--blue);
-    border-bottom: 1px solid #eee;
+    border-bottom: none;
 }
 
 .ac-wrap.open .ac-dropdown {
@@ -143,4 +143,26 @@
     background: var(--blue-light);
     color: var(--blue);
     font-weight: 500;
+}
+
+/* Мобільна версія - використовуємо нативний select */
+@media (max-width: 768px) {
+    select.autocomplete {
+        display: block !important;
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 16px;
+        font-family: inherit;
+        background: white;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235c5c5c' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+    }
+    
+    .ac-wrap {
+        display: none !important;
+    }
 }

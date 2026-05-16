@@ -1,7 +1,19 @@
 /**
  * Autocomplete select (основна логіка)
  */
+
+function isMobile() {
+    return window.innerWidth <= 768;
+}
+
 function buildAutocomplete(select) {
+    // На мобільних пристроях не створюємо кастомний компонент
+    if (isMobile()) {
+        select.style.display = '';
+        select.classList.add('form-input', 'form-select');
+        return;
+    }
+    
     if (select.dataset.acDone) return;
     select.dataset.acDone = '1';
     select.style.display = 'none';
@@ -100,11 +112,9 @@ function buildAutocomplete(select) {
     function filterList(query) {
         var q = query.toLowerCase();
         var items = list.querySelectorAll('.ac-item');
-        var anyVisible = false;
         items.forEach(function(item) {
             var match = !q || item.textContent.toLowerCase().indexOf(q) !== -1;
             item.style.display = match ? '' : 'none';
-            if (match) anyVisible = true;
         });
     }
 
