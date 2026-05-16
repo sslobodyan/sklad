@@ -20,23 +20,26 @@ class ResourceTypesModel extends Model
         return $r ?: null;
     }
 
-    public function createType(string $name, string $unit, string $format = 'int'): int
-    {
-        $this->db->query(
-            "INSERT INTO resource_types (name, unit, format, author) VALUES (?, ?, ?, ?)",
-            [trim($name), trim($unit), $format, $this->authorStamp()]
-        );
-        return $this->db->lastInsertId();
-    }
+public function createType(string $name, string $unit, string $format = 'int', int $showHours = 0): int
+{
+    $this->db->query(
+        "INSERT INTO resource_types (name, unit, format, show_hours, author) VALUES (?, ?, ?, ?, ?)",
+        [trim($name), trim($unit), $format, $showHours, $this->authorStamp()]
+    );
+    return $this->db->lastInsertId();
+}
 
-    public function updateType(int $id, string $name, string $unit, string $format = 'int'): void
-    {
-        $this->setCurrentUser();
-        $this->db->query(
-            "UPDATE resource_types SET name = ?, unit = ?, format = ?, author = ? WHERE id = ?",
-            [trim($name), trim($unit), $format, $this->authorStamp(), $id]
-        );
-    }
+public function updateType(int $id, string $name, string $unit, string $format = 'int', int $showHours = 0): void
+{
+
+to_log('public function updateType $showHours ', $showHours );
+
+    $this->setCurrentUser();
+    $this->db->query(
+        "UPDATE resource_types SET name = ?, unit = ?, format = ?, show_hours = ?, author = ? WHERE id = ?",
+        [trim($name), trim($unit), $format, $showHours, $this->authorStamp(), $id]
+    );
+}
 
     public function deleteType(int $id): bool
     {

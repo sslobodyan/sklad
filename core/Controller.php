@@ -148,4 +148,10 @@ abstract class Controller
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         exit;
     }
+
+protected function getCheckbox(string $key): int
+{
+    return $this->post($key) ? 1 : 0;
+}
+
 }

@@ -23,34 +23,37 @@ class ResourceTypesController extends Controller
         ]);
     }
 
-    public function savetype($id = null): void
-    {
-        if (!$this->isPost()) {
-            $this->redirect('resources/types');
-            return;
-        }
-
-        $name = trim($this->post('name', ''));
-        $unit = trim($this->post('unit', ''));
-        $format = $this->post('format', 'int');
-        
-        if (!in_array($format, ['int', 'dec2', 'hm'])) {
-            $format = 'int';
-        }
-
-        if (!$name || !$unit) {
-            $this->respondAjax(false, 'Заповніть назву та одиницю');
-            return;
-        }
-
-        if ($id) {
-            $this->model->updateType((int)$id, $name, $unit, $format);
-        } else {
-            $this->model->createType($name, $unit, $format);
-        }
-
-        $this->respondAjax(true, $id ? 'Тип оновлено' : 'Тип додано');
+public function savetype($id = null): void
+{
+    if (!$this->isPost()) {
+        $this->redirect('resources/types');
+        return;
     }
+
+to_log('POST', $_POST);
+
+    $name = trim($this->post('name', ''));
+    $unit = trim($this->post('unit', ''));
+    $format = $this->post('format', 'int');
+    $showHours = $this->getCheckbox('show_hours');
+    if (!in_array($format, ['int', 'dec2', 'hm'])) {
+        $format = 'int';
+    }
+
+    if (!$name || !$unit) {
+        $this->respondAjax(false, 'Заповніть назву та одиницю');
+        return;
+    }
+
+    if ($id) {
+        $this->model->updateType((int)$id, $name, $unit, $format, $showHours);
+    } else {
+        $this->model->createType($name, $unit, $format, $showHours);
+    }
+
+    $this->respondAjax(true, $id ? 'Тип оновлено' : 'Тип додано');
+}
+
 
     public function deletetype($id): void
     {

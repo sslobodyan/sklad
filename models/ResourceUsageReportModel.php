@@ -67,14 +67,19 @@ class ResourceUsageReportModel extends Model
     private function getWarehouseData(int $warehouseId, int $materialId, int $resourceTypeId, string $dateFrom, string $dateTo, float $rate): array
     {
         // Отримуємо ВСІ movements для складу та матеріалу за період
-        // Беремо дані безпосередньо з movements: resource_delta, resource_rate, resource_correction
         $movements = $this->db->query(
             "SELECT m.*, 
                     m.resource_delta, 
                     m.resource_rate, 
                     m.resource_correction,
-                    m.resource_value
+                    m.resource_value,
+                    rl.correction_pct,
+                    rt.format, 
+                    rt.unit,
+                    rt.show_hours
              FROM movements m
+             LEFT JOIN resource_logs rl ON m.resource_log_id = rl.id
+             LEFT JOIN resource_types rt ON rl.resource_type_id = rt.id
              WHERE (m.warehouse_to_id = ? OR m.warehouse_from_id = ?)
                AND m.material_id = ?
                AND m.movement_date >= ?
@@ -131,6 +136,7 @@ class ResourceUsageReportModel extends Model
                 $resourceRate = '';
                 $correctionDisplay = '';
                 $note = $movement['note'] ?? '';
+                $deltaDisplay = '';
                 
                 if (!$isManual) {
                     // Дані з полів руху (заповнюються при створенні автоматичних записів)
@@ -138,16 +144,31 @@ class ResourceUsageReportModel extends Model
                     $totalDelta += $delta;
                     
                     $reading = $this->formatValue($movement['resource_value'] ?? null, 'dec2');
-                    $resourceRate = number_format((float)($movement['resource_rate'] ?? 0), 4);
+                    $resourceRate = number_format((float)($movement['resource_rate'] ?? $rate), 4);
                     
-                    $correction = (float)($movement['resource_correction'] ?? 0);
+                    $correction = (float)($movement['resource_correction'] ?? $movement['correction_pct'] ?? 0);
                     $correctionDisplay = $correction != 0 ? ($correction > 0 ? '+' : '') . $correction . '%' : '';
+                    
+                    // Форматуємо дельту з урахуванням show_hours
+                    $showHours = (int)($movement['show_hours'] ?? 0);
+                    $unit = $movement['unit'] ?? '';
+                    $deltaDisplay = $this->formatDelta($delta, 'dec2');
+                    
+                    if ($showHours && $unit === 'год' && $delta > 0) {
+                        $hours = floor($delta);
+                        $minutes = round(($delta - $hours) * 60);
+                        if ($minutes == 60) {
+                            $hours++;
+                            $minutes = 0;
+                        }
+                        $deltaDisplay = $deltaDisplay . ' (' . $hours . ':' . str_pad($minutes, 2, '0', STR_PAD_LEFT) . ')';
+                    }
                 }
                 
                 $rows[] = [
                     'date' => $date,
                     'reading' => $reading,
-                    'delta' => !$isManual ? $this->formatDelta($delta, 'dec2') : '',
+                    'delta' => $deltaDisplay,
                     'rate' => $resourceRate,
                     'correction_pct' => $correctionDisplay,
                     'opening_balance' => $openingBalanceDay,

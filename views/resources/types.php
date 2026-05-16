@@ -23,6 +23,7 @@
                     <th>Назва</th>
                     <th class="col-unit">Одиниця</th>
                     <th class="col-format">Формат вводу</th>
+                    <th class="col-hours">В годинах</th>
                     <th class="col-actions">
                         <button class="btn btn-primary btn-sm table-header-add" onclick="openResourceTypeModal()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -35,15 +36,16 @@
             </thead>
             <tbody>
                 <?php foreach ($types as $i => $t): ?>
-                <tr class="row-editable" ondblclick="openResourceTypeModal(<?= $t['id'] ?>, '<?= htmlspecialchars(addslashes($t['name'])) ?>', '<?= htmlspecialchars(addslashes($t['unit'])) ?>', '<?= $t['format'] ?? 'int' ?>')">
+                <tr class="row-editable" ondblclick="openResourceTypeModal(<?= $t['id'] ?>, '<?= htmlspecialchars(addslashes($t['name'])) ?>', '<?= htmlspecialchars(addslashes($t['unit'])) ?>', '<?= $t['format'] ?? 'int' ?>', <?= $t['show_hours'] ?? 0 ?>)">
                     <td class="text-muted col-index"><?= $i + 1 ?></td>
                     <td class="font-medium"><?= htmlspecialchars($t['name']) ?></td>
                     <td><?= htmlspecialchars($t['unit']) ?></td>
                     <td><?= formatLabel($t['format'] ?? 'int') ?></td>
+                    <td class="text-center"><?= !empty($t['show_hours']) ? '✓' : '' ?></td>
                     <td class="col-actions">
                         <div class="actions">
                             <button class="btn-icon" title="Редагувати"
-                                    onclick="openResourceTypeModal(<?= $t['id'] ?>, '<?= htmlspecialchars(addslashes($t['name'])) ?>', '<?= htmlspecialchars(addslashes($t['unit'])) ?>', '<?= $t['format'] ?? 'int' ?>')">
+                                    onclick="openResourceTypeModal(<?= $t['id'] ?>, '<?= htmlspecialchars(addslashes($t['name'])) ?>', '<?= htmlspecialchars(addslashes($t['unit'])) ?>', '<?= $t['format'] ?? 'int' ?>', <?= $t['show_hours'] ?? 0 ?>)">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -66,11 +68,12 @@
 </div>
 
 <script>
-function openResourceTypeModal(id, name, unit, format) {
+function openResourceTypeModal(id, name, unit, format, showHours) {
     var isEdit = !!id;
     var title = isEdit ? 'Редагувати тип' : 'Новий тип ресурсу';
     var action = isEdit ? basePath + '/resources/savetype/' + id : basePath + '/resources/savetype';
     format = format || 'int';
+    showHours = showHours || 0;
 
     var content =
         '<form action="' + action + '" method="POST" onsubmit="submitForm(this); return false;">' +
@@ -91,6 +94,13 @@ function openResourceTypeModal(id, name, unit, format) {
                         '<option value="hm"' + (format === 'hm' ? ' selected' : '') + '>Години:хвилини (1250:30)</option>' +
                     '</select>' +
                 '</div>' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">' +
+                    '<input type="checkbox" name="show_hours" value="1"' + (showHours ? ' checked' : '') + '>' +
+                    '<span>Додатково в годинах</span>' +
+                '</label>' +
+                '<div class="form-hint">Показувати витрату також у годинах:хвилинах</div>' +
             '</div>' +
             '<div class="modal-footer modal-meta" id="typeMetaFooter">' +
                 '<div class="modal-meta-info"></div>' +
