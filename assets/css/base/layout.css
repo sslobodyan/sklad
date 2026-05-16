@@ -1,0 +1,135 @@
+/* ================================================
+   Основний лейаут
+   ================================================ */
+
+.app {
+    height: calc(100vh - var(--nc-header));
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 6px;
+    left: 6px;
+    z-index: 60;
+    background: white;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 6px;
+    cursor: pointer;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.sidebar-toggle:hover {
+    background: #f5f5f5;
+}
+
+.app-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    background: white;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    z-index: 50;
+}
+
+.sidebar-nav {
+    padding: 8px 0;
+}
+
+.nav-group {
+    margin-bottom: 4px;
+}
+
+.nav-group-label {
+    padding: 8px 14px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #999;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 13px;
+    position: relative;
+    transition: background 0.1s;
+}
+
+.nav-item:hover {
+    background: #f5f7fa;
+    text-decoration: none;
+}
+
+.nav-item.active {
+    background: var(--blue-light);
+    color: var(--blue);
+    font-weight: 500;
+}
+
+.nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    background: var(--blue);
+    border-radius: 0 2px 2px 0;
+}
+
+.nav-item svg {
+    color: var(--text-secondary);
+}
+
+.nav-item.active svg {
+    color: var(--blue);
+}
+
+.main {
+    flex: 1;
+    padding: 8px 16px 0;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.main > .card-stretch {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0;
+}
+
+.card-stretch > .table-scroll {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+}
+
+.card-footer-info {
+    flex-shrink: 0;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    border-top: 1px solid #f0f2f5;
+    background: #fafbfc;
+}

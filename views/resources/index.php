@@ -21,19 +21,18 @@
         </button>
     </div>
 </div>
+
 <div class="card filter-panel">
     <form method="GET" class="filter-grid filter-grid-with-action">
-
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Дата від</label>
             <input type="date" name="date_from" class="form-input" value="<?= htmlspecialchars($filters['date_from'] ?? '') ?>">
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Дата до</label>
             <input type="date" name="date_to" class="form-input" value="<?= htmlspecialchars($filters['date_to'] ?? '') ?>">
         </div>
-
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Склад</label>
             <select name="warehouse_id" class="autocomplete" data-placeholder="Усі склади">
                 <option value="">Усі склади</option>
@@ -44,7 +43,7 @@
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Тип ресурсу</label>
             <select name="resource_type_id" class="form-input form-select">
                 <option value="">Усі</option>
@@ -55,8 +54,7 @@
                 <?php endforeach; ?>
             </select>
         </div>
-
-        <div class="form-group filter-action-inline" style="margin-bottom:0">
+        <div class="form-group filter-action-inline">
             <label class="form-label">&nbsp;</label>
             <div class="filter-action-stack">
                 <button type="submit" class="btn btn-primary">Застосувати</button>
@@ -65,6 +63,7 @@
         </div>
     </form>
 </div>
+
 <?php
 $printFilters = [];
 if (!empty($filters['warehouse_id'])) {
@@ -86,117 +85,121 @@ if (!empty($filters['date_to'])) $printFilters[] = 'до ' . formatDateUa($filte
     <?php endif; ?>
     <div><strong>Записів:</strong> <?= count($logs) ?> • <strong>Дата друку:</strong> <?= date('d.m.Y H:i') ?></div>
 </div>
+
 <div class="card card-stretch">
     <?php if (empty($logs) && empty($warehousesWithResources)): ?>
     <div class="empty-state">
         <p>Спочатку налаштуйте <a href="<?= $basePath ?>/resources/rates">норми списання</a></p>
     </div>
+    <?php elseif (empty($logs)): ?>
+    <div class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+        </svg>
+        <p>Записів поки немає</p>
+        <button class="btn btn-primary btn-sm" onclick="openReadingModal()">Додати перший показник</button>
+    </div>
     <?php else: ?>
     <div class="table-scroll">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th style="width:90px">Дата</th>
-                <th>Склад</th>
-                <th style="width:120px">Ресурс</th>
-                <th style="width:110px" class="text-right">Показник</th>
-                <th style="width:110px" class="text-right">Попередній</th>
-
-                <th style="width:100px" class="text-right">Δ Витрата</th>
-                <th style="width:60px" class="text-right">Попр.%</th>
-                <th>Примітка</th>
-
-                <th style="width:140px" class="no-print-col">
-                    <button class="btn btn-primary btn-sm table-header-add" onclick="openReadingModal()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Додати
-                    </button>
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($logs)): ?>
-            <tr><td colspan="9" class="text-muted" style="text-align:center;padding:20px">Записів поки немає</td></tr>
-            <?php endif; ?>
-            <?php foreach ($logs as $l):
-                $isClosed = !empty($closedDate) && $l['log_date'] <= $closedDate;
-                $isHighlight = !empty($highlightId) && $highlightId == $l['id'];
-                $fmt = $l['format'] ?? 'dec2';
-                $jsLog = json_encode([
-                    'id' => $l['id'],
-                    'log_date' => $l['log_date'],
-                    'reading' => (float)$l['reading'],
-                    'prev_reading' => $l['prev_reading'] !== null ? (float)$l['prev_reading'] : 0,
-                    'note' => $l['note'] ?? '',
-                    'warehouse_id' => $l['warehouse_id'],
-                    'resource_type_id' => $l['resource_type_id'],
-                    'warehouse_name' => $l['warehouse_name'],
-                    'type_name' => $l['type_name'],
-                    'unit' => $l['unit'],
-                    'format' => $fmt,
-                    'correction_pct' => (float)($l['correction_pct'] ?? 0),
-                ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
-            ?>
-            <tr id="rlog-<?= $l['id'] ?>" class="<?= $isHighlight ? 'row-highlight' : '' ?> <?= $isClosed ? 'row-closed' : 'row-editable' ?>"<?= !$isClosed ? " ondblclick='openEditReadingModal($jsLog)' title='Подвійний клік — редагувати'" : " title='Закритий період'" ?>>
-                <td class="font-mono"><?= formatDateUa($l['log_date']) ?></td>
-                <td class="font-medium"><?= htmlspecialchars($l['warehouse_name']) ?></td>
-                <td><?= htmlspecialchars($l['type_name']) ?> <span class="text-muted" style="font-size:11px">(<?= htmlspecialchars($l['unit']) ?>)</span></td>
-                <td class="text-right font-mono font-bold"><?= formatReading($l['reading'], $fmt) ?></td>
-                <td class="text-right font-mono text-muted"><?= $l['prev_reading'] !== null ? formatReading($l['prev_reading'], $fmt) : '—' ?></td>
-                
-                <td class="text-right font-mono num-positive"><?= $l['delta'] !== null ? '+' . formatReading($l['delta'], $fmt) : '—' ?></td>
-                <td class="text-right font-mono"><?php $cp = (float)($l['correction_pct'] ?? 0); echo $cp != 0 ? ($cp > 0 ? '+' : '') . rtrim(rtrim(number_format($cp, 2, '.', ''), '0'), '.') . '%' : ''; ?></td>
-
-                <td class="text-muted note-cell" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($l['note'] ?? '') ?></td>
-                <td class="no-print-col">
-                    <div class="actions">
-                        <?php if (!$isClosed): ?>
-                        <button class="btn-icon" title="Редагувати" onclick='openEditReadingModal(<?= $jsLog ?>)'>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="col-date">Дата</th>
+                    <th>Склад</th>
+                    <th class="col-resource">Ресурс</th>
+                    <th class="text-right col-reading">Показник</th>
+                    <th class="text-right col-reading">Попередній</th>
+                    <th class="text-right col-delta">Δ Витрата</th>
+                    <th class="text-right col-correction">Попр.%</th>
+                    <th>Примітка</th>
+                    <th class="col-actions no-print-col">
+                        <button class="btn btn-primary btn-sm table-header-add" onclick="openReadingModal()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                             </svg>
+                            Додати
                         </button>
-                        <button class="btn-icon btn-icon-danger" title="Видалити (та пов'язані рухи)"
-                                onclick="confirmDelete('<?= $basePath ?>/resources/deletelog/<?= $l['id'] ?>', 'Видалити цей запис та всі пов\'язані рухи?')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-                            </svg>
-                        </button>
-                        <?php else: ?>
-                        <span class="closed-lock" title="Закритий період">🔒</span>
-                        <?php endif; ?>
-                        <?php if ($l['delta'] !== null && (float)$l['delta'] > 0): ?>
-                        <?php
-                            $movParams = [
-                                'warehouse_id' => $l['warehouse_id'],
-                                'date_from' => isset($prevDates[$l['id']]) ? $prevDates[$l['id']] : $l['log_date'],
-                                'date_to' => $l['log_date'],
-                            ];
-                        ?>
-                        <a href="<?= $basePath ?>/movements?<?= http_build_query($movParams) ?>" class="btn-icon btn-icon-goto" title="Показати рухи">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>
-                            </svg>
-                        </a>
-                        <?php endif; ?>
-                    </div>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($logs as $l):
+                    $isClosed = !empty($closedDate) && $l['log_date'] <= $closedDate;
+                    $isHighlight = !empty($highlightId) && $highlightId == $l['id'];
+                    $fmt = $l['format'] ?? 'dec2';
+                    $jsLog = json_encode([
+                        'id' => $l['id'],
+                        'log_date' => $l['log_date'],
+                        'reading' => (float)$l['reading'],
+                        'prev_reading' => $l['prev_reading'] !== null ? (float)$l['prev_reading'] : 0,
+                        'note' => $l['note'] ?? '',
+                        'warehouse_id' => $l['warehouse_id'],
+                        'resource_type_id' => $l['resource_type_id'],
+                        'warehouse_name' => $l['warehouse_name'],
+                        'type_name' => $l['type_name'],
+                        'unit' => $l['unit'],
+                        'format' => $fmt,
+                        'correction_pct' => (float)($l['correction_pct'] ?? 0),
+                    ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
+                ?>
+                <tr id="rlog-<?= $l['id'] ?>" class="<?= $isHighlight ? 'row-highlight' : '' ?> <?= $isClosed ? 'row-closed' : 'row-editable' ?>"<?= !$isClosed ? " ondblclick='openEditReadingModal($jsLog)' title='Подвійний клік — редагувати'" : " title='Закритий період'" ?>>
+                    <td class="font-mono"><?= formatDateUa($l['log_date']) ?></td>
+                    <td class="font-medium"><?= htmlspecialchars($l['warehouse_name']) ?></td>
+                    <td><?= htmlspecialchars($l['type_name']) ?> <span class="text-muted">(<?= htmlspecialchars($l['unit']) ?>)</span></td>
+                    <td class="text-right font-mono font-bold"><?= formatReading($l['reading'], $fmt) ?></td>
+                    <td class="text-right font-mono text-muted"><?= $l['prev_reading'] !== null ? formatReading($l['prev_reading'], $fmt) : '—' ?></td>
+                    <td class="text-right font-mono num-positive"><?= $l['delta'] !== null ? '+' . formatReading($l['delta'], $fmt) : '—' ?></td>
+                    <td class="text-right font-mono"><?php $cp = (float)($l['correction_pct'] ?? 0); echo $cp != 0 ? ($cp > 0 ? '+' : '') . rtrim(rtrim(number_format($cp, 2, '.', ''), '0'), '.') . '%' : ''; ?></td>
+                    <td class="text-muted note-cell"><?= htmlspecialchars($l['note'] ?? '') ?></td>
+                    <td class="col-actions no-print-col">
+                        <div class="actions">
+                            <?php if (!$isClosed): ?>
+                            <button class="btn-icon" title="Редагувати" onclick='openEditReadingModal(<?= $jsLog ?>)'>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon btn-icon-danger" title="Видалити (та пов'язані рухи)"
+                                    onclick="confirmDelete('<?= $basePath ?>/resources/deletelog/<?= $l['id'] ?>', 'Видалити цей запис та всі пов\'язані рухи?')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                </svg>
+                            </button>
+                            <?php else: ?>
+                            <span class="closed-lock" title="Закритий період">🔒</span>
+                            <?php endif; ?>
+                            <?php if ($l['delta'] !== null && (float)$l['delta'] > 0): ?>
+                            <?php
+                                $movParams = [
+                                    'warehouse_id' => $l['warehouse_id'],
+                                    'date_from' => isset($prevDates[$l['id']]) ? $prevDates[$l['id']] : $l['log_date'],
+                                    'date_to' => $l['log_date'],
+                                ];
+                            ?>
+                            <a href="<?= $basePath ?>/movements?<?= http_build_query($movParams) ?>" class="btn-icon btn-icon-goto" title="Показати рухи">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
     <div class="card-footer-info">Записів: <?= count($logs) ?></div>
     <?php endif; ?>
 </div>
+
 <script>
 var resWarehouses = <?= json_encode($warehousesWithResources, JSON_UNESCAPED_UNICODE) ?>;
 var resTypes = <?= json_encode($types, JSON_UNESCAPED_UNICODE) ?>;
 var currentFormat = 'dec2';
 var currentContext = null;
+
 <?php if (!empty($highlightId)): ?>
 (function() {
     var el = document.getElementById('rlog-<?= (int)$highlightId ?>');
@@ -217,6 +220,7 @@ var currentContext = null;
     }
 })();
 <?php endif; ?>
+
 function formatReadingJs(val, fmt) {
     if (fmt === 'hm') {
         var h = Math.floor(val);
@@ -226,48 +230,51 @@ function formatReadingJs(val, fmt) {
     if (fmt === 'int') return Math.round(val).toString();
     return parseFloat(val).toFixed(2);
 }
+
 function hmToDecimal(str) {
     var parts = str.split(':');
     var h = parseInt(parts[0]) || 0;
     var m = parseInt(parts[1]) || 0;
     return h + m / 60;
 }
+
 function hmToDecimalSafe(str) {
     if (!str || str.indexOf(':') === -1) return str;
     return hmToDecimal(str);
 }
+
 function buildReadingInput(id, value, fmt) {
     if (fmt === 'hm') {
         var display = value !== '' && value !== null ? formatReadingJs(parseFloat(value), 'hm') : '';
         return '<input type="text" class="form-input" id="' + id + '_display" placeholder="год:хв (напр. 1250:30)" value="' + display + '" required ' +
-               'oninput="this.value=this.value.replace(/[^0-9:]/g,\\x27\\x27)">' +
+               'oninput="this.value=this.value.replace(/[^0-9:]/g,\'\')">' +
                '<input type="hidden" name="reading" id="' + id + '" value="' + (value || '') + '">';
     }
     var step = fmt === 'int' ? '1' : '0.01';
     var ph = fmt === 'int' ? '0' : '0.00';
-    var extra = fmt === 'int' ? ' onkeydown="if(event.key==\\x27.\\x27||event.key==\\x27,\\x27)event.preventDefault()"' : '';
+    var extra = fmt === 'int' ? ' onkeydown="if(event.key==\'.\'||event.key==\',\')event.preventDefault()"' : '';
     return '<input type="number" name="reading" class="form-input" id="' + id + '" step="' + step + '" min="0" required placeholder="' + ph + '" value="' + (value || '') + '"' + extra + '>';
 }
+
 function getCurrentReadingValue(form) {
     var hmDisplay = form.querySelector('#readingValue_display, #editReadingValue_display');
     if (hmDisplay) return parseFloat(hmToDecimalSafe(hmDisplay.value)) || 0;
     var num = form.querySelector('input[name="reading"]');
     return num ? (parseFloat(num.value) || 0) : 0;
 }
+
 function renderContextBox(data) {
     var fmt = data.format || 'dec2';
     var html = '<div class="resource-context-box">';
     if (data.prev_date) {
         html += '⬅ Попередній: <strong>' + formatReadingJs(data.prev_reading, fmt) + '</strong> ' + escapeHtml(data.unit) +
-                ' <span style="color:#999">(від ' + data.prev_date + ')</span>';
-        //html += '<br><span style="color:#666">Показник має бути не меншим за ' + formatReadingJs(data.prev_reading, fmt) + '</span>';
+                ' <span class="text-muted">(від ' + data.prev_date + ')</span>';
     } else {
         html += '⬅ Попередніх немає — початковий показник';
     }
     if (data.next_reading !== null) {
         html += '<br>➡ Наступний: <strong>' + formatReadingJs(data.next_reading, fmt) + '</strong> ' + escapeHtml(data.unit) +
-                ' <span style="color:#999">(від ' + data.next_date + ')</span>';
-        //html += '<br><span style="color:var(--danger)">⚠ Показник має бути не більшим за ' + formatReadingJs(data.next_reading, fmt) + '</span>';
+                ' <span class="text-muted">(від ' + data.next_date + ')</span>';
     }
     html += '</div>';
     return html;
@@ -298,11 +305,12 @@ function validateReadingValue(form) {
         return false;
     }
     if (next !== null && reading > next) {
-        showContextWarning('Показник не може бути більшим за наступний (' + formatReadingJs(next, currentContext.format) + ')');
+        showContextWarning('Показник не може бути більшим за наступний (' + formatReadingJs(next, currentContext.format) + ' від ' + currentContext.next_date + ')');
         return false;
     }
     return true;
 }
+
 function openReadingModal() {
     var whOpts = '<option value="">— Оберіть —</option>';
     resWarehouses.forEach(function(w) {
@@ -310,6 +318,7 @@ function openReadingModal() {
     });
     var content =
         '<form action="' + basePath + '/resources/add" method="POST" onsubmit="return beforeSubmitReading(this)">' +
+            '<div class="form-group">' +
                 '<label class="form-label">Дата <span class="required">*</span></label>' +
                 '<input type="date" name="log_date" class="form-input" required id="readingDate" value="' + new Date().toISOString().split('T')[0] + '" onchange="loadContext()">' +
             '</div>' +
@@ -323,24 +332,21 @@ function openReadingModal() {
                     '<option value="">Спочатку оберіть склад</option>' +
                 '</select>' +
             '</div>' +
-            '<div id="contextInfo" style="min-height:72px;max-height:80px;margin-bottom:10px"><div class="resource-context-box"></div></div>' +
-
+            '<div id="contextInfo" class="resource-context-container"></div>' +
             '<div class="form-row">' +
-               '<div class="form-group" id="readingInputWrap">' +
-                   '<label class="form-label">Показник <span class="required">*</span></label>' +
-                   '<input type="number" name="reading" class="form-input" step="0.01" min="0" required placeholder="0" id="readingValue">' +
-               '</div>' +
-                '<div class="form-group" style="max-width:100px">' +
+                '<div class="form-group" id="readingInputWrap">' +
+                    '<label class="form-label">Показник <span class="required">*</span></label>' +
+                    '<input type="number" name="reading" class="form-input" step="0.01" min="0" required placeholder="0" id="readingValue">' +
+                '</div>' +
+                '<div class="form-group">' +
                     '<label class="form-label">Поправка, %</label>' +
                     '<input type="number" name="correction_pct" class="form-input" step="0.01" value="0" placeholder="0">' +
                 '</div>' +
             '</div>' +
-
             '<div class="form-group">' +
                 '<label class="form-label">Примітка</label>' +
                 '<input type="text" name="note" class="form-input" placeholder="Необов\'язково">' +
             '</div>' +
-
             '<div class="modal-footer">' +
                 '<button type="button" class="btn btn-secondary" onclick="closeModal()">Скасувати</button>' +
                 '<button type="submit" class="btn btn-primary">Записати</button>' +
@@ -359,12 +365,13 @@ function beforeSubmitReading(form) {
     submitForm(form);
     return false;
 }
+
 function loadResourceTypes() {
     var whId = document.getElementById('readingWh').value;
     var sel = document.getElementById('readingResType');
     sel.innerHTML = '<option value="">— Оберіть —</option>';
     var info = document.getElementById('contextInfo');
-    if (info) info.innerHTML = '<div class="resource-context-box"></div>';
+    if (info) info.innerHTML = '';
     currentContext = null;
     if (!whId) return;
     var wh = resWarehouses.find(function(w) { return w.id == whId; });
@@ -378,6 +385,7 @@ function loadResourceTypes() {
         }
     });
 }
+
 function loadContext(excludeId) {
     var whEl = document.getElementById('readingWh');
     var rtEl = document.getElementById('readingResType');
@@ -387,7 +395,7 @@ function loadContext(excludeId) {
     var rtId = rtEl ? rtEl.value : '';
     var date = dateEl ? dateEl.value : '';
     if (!whId || !rtId || !date) {
-        if (info) info.innerHTML = '<div class="resource-context-box"></div>';
+        if (info) info.innerHTML = '';
         currentContext = null;
         return;
     }
@@ -407,12 +415,13 @@ function loadContext(excludeId) {
             if (info) info.innerHTML = renderContextBox(data);
         });
 }
+
 function openEditReadingModal(data) {
     var fmt = data.format || 'dec2';
     var readingInput = buildReadingInput('readingValue', data.reading, fmt);
     var content =
         '<form action="' + basePath + '/resources/editlog/' + data.id + '" method="POST" onsubmit="return beforeSubmitEdit(this)">' +
-            '<div class="type-indicator type-transfer" style="margin-bottom:14px">' +
+            '<div class="type-indicator type-transfer">' +
                 escapeHtml(data.warehouse_name) + ' — ' + escapeHtml(data.type_name) + ' (' + escapeHtml(data.unit) + ')' +
             '</div>' +
             '<input type="hidden" id="editExcludeId" value="' + data.id + '">' +
@@ -420,38 +429,32 @@ function openEditReadingModal(data) {
             '<input type="hidden" id="readingResType" value="' + (data.resource_type_id || '') + '">' +
             '<div class="form-group">' +
                 '<label class="form-label">Дата <span class="required">*</span></label>' +
-                '<input type="date" name="log_date" class="form-input" required id="readingDate" value="' + data.log_date + '" onchange="loadContext(document.getElementById(\\x27editExcludeId\\x27).value)">' +
+                '<input type="date" name="log_date" class="form-input" required id="readingDate" value="' + data.log_date + '" onchange="loadContext(document.getElementById(\'editExcludeId\').value)">' +
             '</div>' +
-            '<div id="contextInfo" style="min-height:72px;margin-bottom:10px"><div class="resource-context-box"></div></div>' +
-
+            '<div id="contextInfo" class="resource-context-container"></div>' +
             '<div class="form-row">' +
-
                 '<div class="form-group" id="readingInputWrap">' +
                     '<label class="form-label">Показник <span class="required">*</span></label>' +
                     readingInput +
                 '</div>' +
-
-                '<div class="form-group" style="max-width:100px">' +
+                '<div class="form-group">' +
                     '<label class="form-label">Поправка, %</label>' +
                     '<input type="number" name="correction_pct" class="form-input" step="0.01" value="' + (data.correction_pct || 0) + '">' +
                 '</div>' +
-
             '</div>' +
-
-	    '<div class="form-group">' +
+            '<div class="form-group">' +
                 '<label class="form-label">Примітка</label>' +
                 '<input type="text" name="note" class="form-input" value="' + escapeHtml(data.note) + '" placeholder="Необов\'язково">' +
             '</div>' +
-
             '<div class="modal-footer">' +
                 '<button type="button" class="btn btn-secondary" onclick="closeModal()">Скасувати</button>' +
                 '<button type="submit" class="btn btn-primary">Зберегти</button>' +
             '</div>' +
         '</form>';
     openModal('Редагувати показник', content);
-
     setTimeout(function() { loadContext(data.id); }, 100);
 }
+
 function beforeSubmitEdit(form) {
     var hmDisplay = form.querySelector('#readingValue_display');
     if (hmDisplay) {

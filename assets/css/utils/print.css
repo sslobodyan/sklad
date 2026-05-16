@@ -1,0 +1,110 @@
+/* ================================================
+   Стилі для друку
+   ================================================ */
+
+.print-header {
+    display: none;
+}
+
+@media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body {
+        background: white;
+    }
+
+    .sidebar,
+    .date-panel,
+    .filter-panel,
+    .report-controls,
+    .btn,
+    .actions,
+    .alert,
+    .modal,
+    .modal-backdrop,
+    .sidebar-toggle,
+    .date-range-btn,
+    .header-buttons,
+    .table-header-add,
+    .closed-lock,
+    .page-subtitle,
+    .no-print-col {
+        display: none !important;
+    }
+
+    .app,
+    .app-body,
+    .main,
+    .card,
+    .card-stretch {
+        display: block !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .table-scroll {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .page-header {
+        margin-bottom: 4px !important;
+    }
+
+    .page-title {
+        font-size: 16px !important;
+    }
+
+    .print-header {
+        display: block !important;
+        font-size: 11px;
+        color: #555;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #ccc;
+    }
+
+    .card-footer-info {
+        border-top: 1px solid #ccc;
+        padding: 4px 0;
+        font-size: 10px;
+    }
+
+    .data-table thead th {
+        background: #eee !important;
+        font-size: 10px !important;
+        padding: 4px 6px !important;
+    }
+
+    .data-table tbody td {
+        font-size: 11px !important;
+        padding: 3px 6px !important;
+    }
+
+    .note-cell {
+        max-width: none !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+    }
+
+    .row-closed {
+        opacity: 1 !important;
+    }
+
+    .badge {
+        border: 1px solid #999;
+        background: none !important;
+    }
+    
+    /* Видалено примусове розгортання .detail-group */
+}

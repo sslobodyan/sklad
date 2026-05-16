@@ -1,0 +1,122 @@
+/* ================================================
+   Стилі для сторінок ресурсів
+   ================================================ */
+
+/* Загальні */
+.resource-context-container {
+    min-height: 72px;
+    margin-bottom: 10px;
+}
+
+.col-date {
+    width: 90px;
+}
+
+.col-resource {
+    width: 120px;
+}
+
+.col-reading {
+    width: 110px;
+}
+
+.col-delta {
+    width: 100px;
+}
+
+.col-correction {
+    width: 60px;
+}
+
+.col-actions {
+    width: 140px;
+}
+
+/* Сторінка норм */
+.resources-card {
+    margin-bottom: 12px;
+}
+
+.resources-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.add-resource-form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.add-resource-form select {
+    width: auto;
+    min-width: 150px;
+}
+
+.resources-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 12px;
+}
+
+.resources-empty {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.resource-tag-form {
+    display: inline;
+}
+
+.spread-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+}
+
+.spread-checkbox input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--blue);
+    cursor: pointer;
+    margin: 0;
+}
+
+.col-rate {
+    width: 120px;
+}
+
+.col-spread {
+    width: 70px;
+    text-align: center;
+}
+
+.empty-table {
+    text-align: center;
+    padding: 20px;
+}
+
+/* Сторінка типів ресурсів */
+.col-index {
+    width: 50px;
+}
+
+.col-unit {
+    width: 80px;
+}
+
+.col-format {
+    width: 130px;
+}

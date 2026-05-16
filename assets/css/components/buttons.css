@@ -1,0 +1,118 @@
+/* ================================================
+   Кнопки
+   ================================================ */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-family: inherit;
+    text-decoration: none;
+    transition: all 0.1s;
+}
+
+.btn:hover {
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--blue);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--blue-dark);
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--text);
+    border-color: var(--border);
+}
+
+.btn-secondary:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #b71c1c;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.btn-icon:hover {
+    background: #e8e8e8;
+    color: var(--text);
+}
+
+.btn-icon-danger {
+    color: var(--danger);
+}
+
+.actions {
+    display: flex;
+    gap: 4px;
+}
+
+.table-actions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.table-header-add {
+    width: 100%;
+    justify-content: center;
+    padding: 5px 10px;
+}
+
+.btn-icon-add {
+    color: var(--blue);
+}
+
+.btn-icon-add:hover {
+    background: var(--blue-light);
+    color: var(--blue-dark);
+}
+
+.btn-icon-goto {
+    color: var(--blue);
+}
+
+.btn-icon-goto:hover {
+    background: var(--blue-light);
+    color: var(--blue-dark);
+    text-decoration: none;
+}
+
+.row-editable {
+    cursor: pointer;
+}

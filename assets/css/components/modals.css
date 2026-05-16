@@ -1,0 +1,233 @@
+/* ================================================
+   Модальні вікна
+   ================================================ */
+
+.modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 200;
+}
+
+.modal-backdrop.open {
+    display: block;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    z-index: 210;
+    overflow: hidden;
+    animation: modalIn 0.2s ease-out;
+}
+
+.modal.open {
+    display: block;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid #eee;
+    background: #f8fafc;
+}
+
+.modal-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: #94a3b8;
+    border-radius: 4px;
+    display: flex;
+}
+
+.modal-close:hover {
+    background: #e2e8f0;
+    color: var(--text);
+}
+
+.modal-body {
+    padding: 18px;
+    overflow-y: auto;
+    max-height: calc(90vh - 120px);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 16px;
+    margin-top: 8px;
+    border-top: 1px solid #eee;
+}
+
+.modal-error {
+    background: #fef2f2;
+    color: var(--danger);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 14px;
+}
+
+.confirm-message {
+    text-align: center;
+    padding: 10px 0 20px;
+}
+
+.confirm-message svg {
+    margin-bottom: 12px;
+}
+
+.confirm-message p {
+    font-size: 14px;
+    color: var(--text);
+}
+
+/* Date Panel */
+.date-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+}
+
+.date-panel.open {
+    display: block;
+}
+
+.date-panel-overlay {
+    position: absolute;
+    inset: 0;
+}
+
+.date-panel-content {
+    position: fixed;
+    width: 300px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    padding: 0;
+    overflow: hidden;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+}
+
+.dp-section {
+    padding: 12px 14px;
+}
+
+.dp-label {
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+}
+
+.dp-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.dp-field {
+    flex: 1;
+    min-width: 0;
+}
+
+.dp-field-label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+}
+
+.dp-field input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.dp-field input:focus {
+    outline: none;
+    border-color: var(--blue);
+}
+
+.dp-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.dp-presets a {
+    padding: 3px 7px;
+    font-size: 11px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.dp-presets a:hover {
+    background: var(--blue-light);
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+.dp-btn {
+    padding: 7px 14px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.dp-btn:hover {
+    background: var(--blue-dark);
+}
+
+.dp-divider {
+    height: 1px;
+    background: var(--border);
+}
+
+.dp-closed-info {
+    font-size: 11px;
+    color: var(--danger);
+    padding: 5px 8px;
+    background: #fef2f2;
+    border-radius: 4px;
+    margin-bottom: 6px;
+}

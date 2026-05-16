@@ -1,0 +1,26 @@
+/* ================================================
+   Складський облік — Головний файл стилів
+   ================================================ */
+
+/* Base */
+@import url('base/variables.css');
+@import url('base/layout.css');
+
+/* Components */
+@import url('components/buttons.css');
+@import url('components/cards.css');
+@import url('components/forms.css');
+@import url('components/autocomplete.css');
+@import url('components/modals.css');
+@import url('components/tables.css');
+@import url('components/badges.css');
+@import url('components/filters.css');
+
+/* Pages */
+@import url('pages/reports.css');
+@import url('pages/resources.css');
+
+/* Utils */
+@import url('utils/animations.css');
+@import url('utils/print.css');
+@import url('utils/responsive.css');

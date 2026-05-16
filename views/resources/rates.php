@@ -5,10 +5,9 @@
     </div>
 </div>
 
-<!-- Вибір складу -->
 <div class="card filter-panel">
     <form method="GET" class="filter-grid filter-grid-with-action">
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Склад</label>
             <select name="warehouse_id" class="autocomplete" data-placeholder="— Оберіть склад —" data-submit-on-change>
                 <option value="">— Оберіть склад —</option>
@@ -20,7 +19,7 @@
             </select>
         </div>
         <?php if ($warehouseId && !empty($warehouseResources)): ?>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Ресурс</label>
             <select name="resource_type_id" class="form-input form-select" onchange="this.form.submit()">
                 <option value="">— Оберіть ресурс —</option>
@@ -36,41 +35,48 @@
 </div>
 
 <?php if (!$warehouseId): ?>
-<div class="card"><div class="empty-state"><p>Оберіть склад</p></div></div>
+<div class="card">
+    <div class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+        </svg>
+        <p>Оберіть склад</p>
+    </div>
+</div>
 
 <?php elseif ($selectedWarehouse): ?>
 
 <!-- Прив'язані ресурси -->
-<div class="card" style="margin-bottom:8px">
-    <div style="padding:10px 12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <strong style="font-size:13px">Ресурси складу «<?= htmlspecialchars($selectedWarehouse['name']) ?>»</strong>
-            <form method="POST" action="<?= $basePath ?>/resources/addresource" style="display:flex;gap:6px;align-items:center">
-                <input type="hidden" name="warehouse_id" value="<?= $warehouseId ?>">
-                <select name="resource_type_id" class="form-input form-select" style="width:auto;padding:4px 28px 4px 8px;font-size:12px" required>
-                    <option value="">+ Додати ресурс</option>
-                    <?php foreach ($types as $t): ?>
-                    <option value="<?= $t['id'] ?>"><?= htmlspecialchars($t['name']) ?> (<?= $t['unit'] ?>)</option>
-                    <?php endforeach; ?>
-                </select>
-                <button type="submit" class="btn btn-primary btn-sm">Додати</button>
-            </form>
-        </div>
+<div class="card resources-card">
+    <div class="resources-header">
+        <strong>Ресурси складу «<?= htmlspecialchars($selectedWarehouse['name']) ?>»</strong>
+        <form method="POST" action="<?= $basePath ?>/resources/addresource" class="add-resource-form">
+            <input type="hidden" name="warehouse_id" value="<?= $warehouseId ?>">
+            <select name="resource_type_id" class="form-input form-select" required>
+                <option value="">+ Додати ресурс</option>
+                <?php foreach ($types as $t): ?>
+                <option value="<?= $t['id'] ?>"><?= htmlspecialchars($t['name']) ?> (<?= htmlspecialchars($t['unit']) ?>)</option>
+                <?php endforeach; ?>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Додати</button>
+        </form>
+    </div>
+    <div class="resources-list">
         <?php if (empty($warehouseResources)): ?>
-        <div style="color:#999;font-size:13px;padding:8px 0">Ресурсів не прив'язано</div>
+        <div class="resources-empty">Ресурсів не прив'язано</div>
         <?php else: ?>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-            <?php foreach ($warehouseResources as $wr): ?>
-            <span class="resource-tag">
-                <?= htmlspecialchars($wr['type_name']) ?> (<?= htmlspecialchars($wr['unit']) ?>)
-                <form method="POST" action="<?= $basePath ?>/resources/removeresource" style="display:inline">
-                    <input type="hidden" name="warehouse_id" value="<?= $warehouseId ?>">
-                    <input type="hidden" name="resource_type_id" value="<?= $wr['resource_type_id'] ?>">
-                    <button type="submit" class="resource-tag-remove" title="Видалити" onclick="return confirm('Видалити ресурс?')">&times;</button>
-                </form>
-            </span>
-            <?php endforeach; ?>
-        </div>
+        <?php foreach ($warehouseResources as $wr): ?>
+        <span class="resource-tag">
+            <?= htmlspecialchars($wr['type_name']) ?> (<?= htmlspecialchars($wr['unit']) ?>)
+            <form method="POST" action="<?= $basePath ?>/resources/removeresource" class="resource-tag-form">
+                <input type="hidden" name="warehouse_id" value="<?= $warehouseId ?>">
+                <input type="hidden" name="resource_type_id" value="<?= $wr['resource_type_id'] ?>">
+                <button type="submit" class="resource-tag-remove" title="Видалити" onclick="return confirm('Видалити ресурс?')">&times;</button>
+            </form>
+        </span>
+        <?php endforeach; ?>
         <?php endif; ?>
     </div>
 </div>
@@ -83,54 +89,54 @@
 ?>
 <div class="card card-stretch">
     <div class="table-scroll">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Матеріал</th>
-                <th style="width:120px">Норма на 1 <?= htmlspecialchars($selectedType['unit'] ?? '') ?></th>
-                <th>Віднести на склад</th>
-                <th style="width:70px">По днях</th>
-                <th style="width:140px">
-                    <button class="btn btn-primary btn-sm table-header-add" onclick="openRateModal()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Додати
-                    </button>
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($rates)): ?>
-            <tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px">Норм поки немає</td></tr>
-            <?php endif; ?>
-            <?php foreach ($rates as $r): ?>
-            <tr class="row-editable" ondblclick="openRateModal(<?= $r['id'] ?>, <?= $r['material_id'] ?>, <?= $r['rate'] ?>, <?= $r['source_warehouse_id'] ?: 0 ?>, <?= !empty($r['spread_by_day']) ? 1 : 0 ?>)">
-                <td class="font-medium"><?= htmlspecialchars($r['material_name']) ?></td>
-                <td class="font-mono"><?= $r['rate'] ?></td>
-                <td><?= $r['source_warehouse_name'] ? htmlspecialchars($r['source_warehouse_name']) : '<span class="text-muted" style="font-size:11px">нікуди (списання)</span>' ?></td>
-                <td style="text-align:center"><?= !empty($r['spread_by_day']) ? '✓' : '' ?></td>
-                <td>
-                    <div class="actions">
-                        <button class="btn-icon" title="Редагувати"
-                                onclick="openRateModal(<?= $r['id'] ?>, <?= $r['material_id'] ?>, <?= $r['rate'] ?>, <?= $r['source_warehouse_id'] ?: 0 ?>, <?= !empty($r['spread_by_day']) ? 1 : 0 ?>)">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Матеріал</th>
+                    <th class="col-rate">Норма на 1 <?= htmlspecialchars($selectedType['unit'] ?? '') ?></th>
+                    <th>Віднести на склад</th>
+                    <th class="col-spread">По днях</th>
+                    <th class="col-actions">
+                        <button class="btn btn-primary btn-sm table-header-add" onclick="openRateModal()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                             </svg>
+                            Додати
                         </button>
-                        <button class="btn-icon btn-icon-danger" title="Видалити"
-                                onclick="confirmDelete('<?= $basePath ?>/resources/deleterate/<?= $r['id'] ?>')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-                            </svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($rates)): ?>
+                <tr><td colspan="5" class="text-muted empty-table">Норм поки немає</td></tr>
+                <?php endif; ?>
+                <?php foreach ($rates as $r): ?>
+                <tr class="row-editable" ondblclick="openRateModal(<?= $r['id'] ?>, <?= $r['material_id'] ?>, <?= $r['rate'] ?>, <?= $r['source_warehouse_id'] ?: 0 ?>, <?= !empty($r['spread_by_day']) ? 1 : 0 ?>)">
+                    <td class="font-medium"><?= htmlspecialchars($r['material_name']) ?></td>
+                    <td class="font-mono text-right"><?= $r['rate'] ?></td>
+                    <td><?= $r['source_warehouse_name'] ? htmlspecialchars($r['source_warehouse_name']) : '<span class="text-muted">нікуди (списання)</span>' ?></td>
+                    <td class="text-center"><?= !empty($r['spread_by_day']) ? '✓' : '' ?></td>
+                    <td class="col-actions">
+                        <div class="actions">
+                            <button class="btn-icon" title="Редагувати"
+                                    onclick="openRateModal(<?= $r['id'] ?>, <?= $r['material_id'] ?>, <?= $r['rate'] ?>, <?= $r['source_warehouse_id'] ?: 0 ?>, <?= !empty($r['spread_by_day']) ? 1 : 0 ?>)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon btn-icon-danger" title="Видалити"
+                                    onclick="confirmDelete('<?= $basePath ?>/resources/deleterate/<?= $r['id'] ?>')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -171,7 +177,7 @@ function openRateModal(id, materialId, rate, sourceWhId, spreadByDay) {
                 '<select name="source_warehouse_id" class="autocomplete" data-placeholder="Нікуди (списання)">' + whOpts + '</select>' +
                 '<div class="form-hint">Порожньо = просто списання, інакше — переміщення</div>' +
             '</div>' +
-            '<label class="import-checkbox" style="border-color:var(--border);background:var(--bg);color:var(--text)">' +
+            '<label class="checkbox-label spread-checkbox">' +
                 '<input type="checkbox" name="spread_by_day" value="1"' + (spreadByDay ? ' checked' : '') + '>' +
                 '<span>Рознести по днях (витрата рівномірно по кожному дню)</span>' +
             '</label>' +

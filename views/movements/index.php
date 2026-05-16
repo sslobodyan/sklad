@@ -81,18 +81,17 @@ $sortDir = $sortDir ?? 'desc';
 <!-- Фільтри -->
 <div class="card filter-panel">
     <form method="GET" class="filter-grid filter-grid-with-action">
-        <?php /* Зберігаємо поточне сортування у фільтрах */ ?>
         <input type="hidden" name="sort" value="<?= htmlspecialchars($sortKey) ?>">
         <input type="hidden" name="order" value="<?= htmlspecialchars($sortDir) ?>">
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Дата від</label>
             <input type="date" name="date_from" class="form-input" value="<?= htmlspecialchars($filters['date_from'] ?? '') ?>">
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Дата до</label>
             <input type="date" name="date_to" class="form-input" value="<?= htmlspecialchars($filters['date_to'] ?? '') ?>">
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Склад</label>
             <select name="warehouse_id" class="autocomplete" data-placeholder="Усі склади">
                 <option value="">Усі склади</option>
@@ -105,7 +104,7 @@ $sortDir = $sortDir ?? 'desc';
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Матеріал</label>
             <select name="material_id" class="autocomplete" data-placeholder="Усі матеріали">
                 <option value="">Усі матеріали</option>
@@ -116,7 +115,7 @@ $sortDir = $sortDir ?? 'desc';
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="form-group filter-action-inline" style="margin-bottom:0">
+        <div class="form-group filter-action-inline">
             <label class="form-label">&nbsp;</label>
             <div class="filter-action-stack">
                 <button type="submit" class="btn btn-primary">Застосувати</button>
@@ -127,7 +126,6 @@ $sortDir = $sortDir ?? 'desc';
 </div>
 
 <?php
-// Підготовка тексту фільтрів для друку
 $printFilters = [];
 if (!empty($filters['date_from'])) $printFilters[] = 'від ' . formatDateUa($filters['date_from']);
 if (!empty($filters['date_to'])) $printFilters[] = 'до ' . formatDateUa($filters['date_to']);
@@ -169,19 +167,19 @@ $printSort = ($sortNames[$sortKey] ?? 'Дата') . ' (' . ($sortDir === 'asc' ?
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width:90px">
+                    <th class="col-date">
                         <a href="<?= sortUrl('date', $sortKey, $sortDir, $basePath, $filters) ?>" class="sort-header">
                             Дата <?= sortIcon('date', $sortKey, $sortDir) ?>
                         </a>
                     </th>
-                    <th style="width:80px">Тип</th>
-                    <th>
+                    <th class="col-type">Тип</th>
+                    <th class="col-warehouse">
                         <a href="<?= sortUrl('from', $sortKey, $sortDir, $basePath, $filters) ?>" class="sort-header">
                             Звідки <?= sortIcon('from', $sortKey, $sortDir) ?>
                         </a>
                     </th>
-                    <th style="width:24px"></th>
-                    <th>
+                    <th class="col-arrow"></th>
+                    <th class="col-warehouse">
                         <a href="<?= sortUrl('to', $sortKey, $sortDir, $basePath, $filters) ?>" class="sort-header">
                             Куди <?= sortIcon('to', $sortKey, $sortDir) ?>
                         </a>
@@ -191,7 +189,7 @@ $printSort = ($sortNames[$sortKey] ?? 'Дата') . ' (' . ($sortDir === 'asc' ?
                             Матеріал <?= sortIcon('material', $sortKey, $sortDir) ?>
                         </a>
                     </th>
-                    <th style="width:80px" class="text-right">
+                    <th class="col-quantity text-right">
                         <a href="<?= sortUrl('quantity', $sortKey, $sortDir, $basePath, $filters) ?>" class="sort-header">
                             К-сть <?= sortIcon('quantity', $sortKey, $sortDir) ?>
                         </a>
@@ -201,7 +199,7 @@ $printSort = ($sortNames[$sortKey] ?? 'Дата') . ' (' . ($sortDir === 'asc' ?
                             Примітка <?= sortIcon('note', $sortKey, $sortDir) ?>
                         </a>
                     </th>
-                    <th style="width:140px" class="no-print-col">
+                    <th class="col-actions no-print-col">
                         <button class="btn btn-primary btn-sm table-header-add" title="Додати рух" onclick="openMovementModal()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -242,7 +240,7 @@ $printSort = ($sortNames[$sortKey] ?? 'Дата') . ' (' . ($sortDir === 'asc' ?
                     if ($isClosed && !$isAuto) $trClasses[] = 'row-closed';
                     if ($isAuto && $isClosed) $trClasses[] = 'row-closed';
                     if ($isAuto) $trClasses[] = 'row-auto';
-                    if (!$isClosed || $isAuto) $trClasses[] = 'row-editable';
+                    if (!$isLocked) $trClasses[] = 'row-editable';
                 ?>
                 <tr id="row-<?= $m['id'] ?>" class="<?= implode(' ', $trClasses) ?>"<?php
                     if (!$isLocked) {
@@ -255,13 +253,13 @@ $printSort = ($sortNames[$sortKey] ?? 'Дата') . ' (' . ($sortDir === 'asc' ?
                 ?>>
                     <td class="font-mono"><?= formatDateUa($m['movement_date']) ?></td>
                     <td><span class="badge <?= $typeCls ?>"><?= $typeText ?></span></td>
-                    <td><?= $m['warehouse_from_name'] ? htmlspecialchars($m['warehouse_from_name']) : '<span class="text-muted" style="font-size:11px">ззовні</span>' ?></td>
+                    <td><?= $m['warehouse_from_name'] ? htmlspecialchars($m['warehouse_from_name']) : '<span class="text-muted">ззовні</span>' ?></td>
                     <td class="text-muted">→</td>
-                    <td><?= $m['warehouse_to_name'] ? htmlspecialchars($m['warehouse_to_name']) : '<span class="text-muted" style="font-size:11px">списання</span>' ?></td>
+                    <td><?= $m['warehouse_to_name'] ? htmlspecialchars($m['warehouse_to_name']) : '<span class="text-muted">списання</span>' ?></td>
                     <td class="font-medium"><?= htmlspecialchars($m['material_name']) ?></td>
                     <td class="text-right font-mono font-bold"><?= number_format((float)$m['quantity'], 2, '.', '') ?></td>
-                    <td class="text-muted note-cell" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($m['note'] ?? '') ?></td>
-                    <td class="no-print-col">
+                    <td class="text-muted note-cell"><?= htmlspecialchars($m['note'] ?? '') ?></td>
+                    <td class="col-actions no-print-col">
                         <?php if ($isAuto): ?>
                         <div class="actions">
                             <?php if ($isClosed): ?><span class="closed-lock" title="Закритий період">🔒</span><?php endif; ?>
@@ -273,8 +271,7 @@ $printSort = ($sortNames[$sortKey] ?? 'Дата') . ' (' . ($sortDir === 'asc' ?
                         </div>
                         <?php elseif (!$isClosed): ?>
                         <div class="actions">
-                            <button class="btn-icon" title="Редагувати"
-                                    onclick='openMovementModal(<?= $jsData ?>)'>
+                            <button class="btn-icon" title="Редагувати" onclick='openMovementModal(<?= $jsData ?>)'>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -300,7 +297,6 @@ $printSort = ($sortNames[$sortKey] ?? 'Дата') . ' (' . ($sortDir === 'asc' ?
     <?php endif; ?>
 </div>
 
-<!-- Передача даних у JS -->
 <script>
 window.warehousesList = <?= json_encode($warehouses, JSON_UNESCAPED_UNICODE) ?>;
 window.materialsList = <?= json_encode($materials, JSON_UNESCAPED_UNICODE) ?>;

@@ -1,0 +1,84 @@
+/* ================================================
+   Спеціальні фільтри (склади, чеклісти)
+   ================================================ */
+
+.wh-filter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.wh-filter-btn:hover {
+    border-color: #aaa;
+}
+
+.wh-filter-btn svg {
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.wh-check-list {
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.wh-check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    border-bottom: 1px solid #f5f5f5;
+    transition: background 0.08s;
+}
+
+.wh-check-item:last-child {
+    border-bottom: none;
+}
+
+.wh-check-item:hover {
+    background: #f5f8fc;
+}
+
+.wh-check-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--blue);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.wh-check-actions {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.resource-context-box {
+    min-height: 72px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    font-size: 12px;
+}
+
+.resource-context-error {
+    margin-top: 6px;
+    color: var(--danger);
+    font-weight: 500;
+}

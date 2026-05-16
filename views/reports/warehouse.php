@@ -33,10 +33,9 @@ function formatNum($n) {
     </div>
 </div>
 
-<!-- Фільтри -->
 <div class="card filter-panel">
     <form method="GET" class="filter-grid filter-grid-with-action">
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Склад</label>
             <select name="warehouse_id" class="autocomplete" data-placeholder="— Оберіть склад —" data-submit-on-change>
                 <option value="">— Оберіть склад —</option>
@@ -47,15 +46,15 @@ function formatNum($n) {
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Період від</label>
             <input type="date" name="date_from" class="form-input" value="<?= htmlspecialchars($dateFrom) ?>">
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Період до</label>
             <input type="date" name="date_to" class="form-input" value="<?= htmlspecialchars($dateTo) ?>">
         </div>
-        <div class="form-group filter-action-inline" style="margin-bottom:0">
+        <div class="form-group filter-action-inline">
             <label class="form-label">&nbsp;</label>
             <button type="submit" class="btn btn-primary">Сформувати</button>
         </div>
@@ -92,12 +91,12 @@ function formatNum($n) {
         <table class="data-table" id="reportTable">
             <thead>
                 <tr>
-                    <th style="width:28px"></th>
+                    <th class="col-expand"></th>
                     <th>Матеріал</th>
-                    <th class="text-right" style="width:100px">Вх. сальдо</th>
-                    <th class="text-right" style="width:100px">Прихід</th>
-                    <th class="text-right" style="width:100px">Витрата</th>
-                    <th class="text-right" style="width:100px">Вих. сальдо</th>
+                    <th class="text-right col-amount">Вх. сальдо</th>
+                    <th class="text-right col-amount">Прихід</th>
+                    <th class="text-right col-amount">Витрата</th>
+                    <th class="text-right col-amount">Вих. сальдо</th>
                 </tr>
             </thead>
             <tbody>
@@ -110,8 +109,6 @@ function formatNum($n) {
                     $totalClosing += $row['closing_balance'];
                     $rowId = 'mat-' . $row['material_id'];
 
-                    // Рахуємо сальдо по рухах у хронологічному порядку,
-                    // а виводимо деталі у зворотному порядку дат
                     $detailRows = [];
                     $runningBalance = (float)$row['opening_balance'];
                     foreach ($row['details'] as $detail) {
@@ -121,8 +118,8 @@ function formatNum($n) {
                     }
                     $detailRows = array_reverse($detailRows);
                 ?>
-                <tr class="expandable report-summary-row" onclick="toggleRow('<?= $rowId ?>')">
-                    <td>
+                <tr class="expandable report-summary-row" data-row-id="<?= $rowId ?>" onclick="toggleRow(this)">
+                    <td class="col-expand">
                         <?php if (!empty($row['details'])): ?>
                         <span class="expand-icon" id="icon-<?= $rowId ?>">▶</span>
                         <?php endif; ?>
@@ -135,25 +132,25 @@ function formatNum($n) {
                 </tr>
                 <?php foreach ($detailRows as $d): ?>
                 <tr class="detail-row" data-parent="<?= $rowId ?>" style="display:none" ondblclick="goToMovement(<?= $d['id'] ?>)">
-                    <td></td>
-                    <td style="padding-left:24px">
-                        <span class="text-muted font-mono" style="font-size:11px"><?= formatDateUa($d['date']) ?></span>
+                    <td class="col-expand"></td>
+                    <td class="detail-cell">
+                        <span class="text-muted font-mono"><?= formatDateUa($d['date']) ?></span>
                         <span class="badge <?= $d['incoming'] > 0 ? 'badge-in' : 'badge-out' ?>"><?= $d['type'] ?></span>
                         <span class="text-muted"><?= htmlspecialchars($d['counterpart']) ?></span>
                         <?php if ($d['note']): ?>
-                        <span class="text-muted" style="font-style:italic"> — <?= htmlspecialchars($d['note']) ?></span>
+                        <span class="text-muted detail-note"> — <?= htmlspecialchars($d['note']) ?></span>
                         <?php endif; ?>
                     </td>
-                    <td></td>
                     <td class="text-right font-mono"><?= $d['incoming'] > 0 ? formatNum($d['incoming']) : '' ?></td>
                     <td class="text-right font-mono"><?= $d['outgoing'] > 0 ? formatNum($d['outgoing']) : '' ?></td>
                     <td class="text-right font-mono <?= $d['balance_after'] < 0 ? 'balance-negative' : '' ?>"><?= formatNum($d['balance_after']) ?></td>
+                    <td class="text-right font-mono"></td>
                 </tr>
                 <?php endforeach; ?>
                 <?php endforeach; ?>
                 
                 <tr class="totals-row report-summary-row">
-                    <td></td>
+                    <td class="col-expand"></td>
                     <td>Разом</td>
                     <td class="text-right font-mono"><?= formatNum($totalOpening) ?></td>
                     <td class="text-right font-mono"><?= formatNum($totalIn) ?></td>
@@ -171,19 +168,18 @@ function formatNum($n) {
 </div>
 
 <script>
-function toggleRow(id) {
-    const rows = document.querySelectorAll('[data-parent="' + id + '"]');
-    const icon = document.getElementById('icon-' + id);
-    const isHidden = rows[0] && rows[0].style.display === 'none';
-    rows.forEach(r => r.style.display = isHidden ? '' : 'none');
-    if (icon) {
-        icon.classList.toggle('expanded', isHidden);
-    }
+function toggleRow(row) {
+    var rowId = row.dataset.rowId;
+    var rows = document.querySelectorAll('[data-parent="' + rowId + '"]');
+    var icon = document.getElementById('icon-' + rowId);
+    var isHidden = rows[0] && rows[0].style.display === 'none';
+    rows.forEach(function(r) { r.style.display = isHidden ? '' : 'none'; });
+    if (icon) icon.classList.toggle('expanded', isHidden);
 }
 
 function toggleAll(expand) {
-    document.querySelectorAll('.detail-row').forEach(r => r.style.display = expand ? '' : 'none');
-    document.querySelectorAll('.expand-icon').forEach(i => i.classList.toggle('expanded', expand));
+    document.querySelectorAll('.detail-row').forEach(function(r) { r.style.display = expand ? '' : 'none'; });
+    document.querySelectorAll('.expand-icon').forEach(function(i) { i.classList.toggle('expanded', expand); });
 }
 
 function goToMovement(id) {

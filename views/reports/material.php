@@ -3,7 +3,6 @@ function formatNum($n) {
     if ($n == 0) return '—';
     return number_format($n, 2, '.', ' ');
 }
-$selectedWarehouseIds = $selectedWarehouseIds ?? [];
 ?>
 <div class="page-header">
     <div>
@@ -34,10 +33,9 @@ $selectedWarehouseIds = $selectedWarehouseIds ?? [];
     </div>
 </div>
 
-<!-- Фільтри -->
 <div class="card filter-panel">
     <form method="GET" id="reportForm" class="filter-grid filter-grid-with-action">
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Матеріал</label>
             <select name="material_id" class="autocomplete" data-placeholder="— Оберіть матеріал —" data-submit-on-change>
                 <option value="">— Оберіть матеріал —</option>
@@ -48,10 +46,10 @@ $selectedWarehouseIds = $selectedWarehouseIds ?? [];
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Склади
                 <?php if (!empty($selectedWarehouseIds)): ?>
-                <span style="font-weight:400;color:var(--blue)">(<?= count($selectedWarehouseIds) ?>)</span>
+                <span class="filter-badge">(<?= count($selectedWarehouseIds) ?>)</span>
                 <?php endif; ?>
             </label>
             <button type="button" class="wh-filter-btn" onclick="openWarehouseFilter()">
@@ -60,15 +58,15 @@ $selectedWarehouseIds = $selectedWarehouseIds ?? [];
             </button>
             <input type="hidden" name="wh" id="whFilterValue" value="<?= htmlspecialchars(implode(',', $selectedWarehouseIds)) ?>">
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Період від</label>
             <input type="date" name="date_from" class="form-input" value="<?= htmlspecialchars($dateFrom) ?>">
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group">
             <label class="form-label">Період до</label>
             <input type="date" name="date_to" class="form-input" value="<?= htmlspecialchars($dateTo) ?>">
         </div>
-        <div class="form-group filter-action-inline" style="margin-bottom:0">
+        <div class="form-group filter-action-inline">
             <label class="form-label">&nbsp;</label>
             <div class="filter-action-stack">
                 <button type="submit" class="btn btn-primary">Сформувати</button>
@@ -107,15 +105,15 @@ $selectedWarehouseIds = $selectedWarehouseIds ?? [];
 
 <div class="card card-stretch">
     <div class="table-scroll">
-        <table class="data-table" id="reportTable">
+        <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width:28px"></th>
+                    <th class="col-expand"></th>
                     <th>Склад</th>
-                    <th class="text-right" style="width:100px">Вх. сальдо</th>
-                    <th class="text-right" style="width:100px">Прихід</th>
-                    <th class="text-right" style="width:100px">Витрата</th>
-                    <th class="text-right" style="width:100px">Вих. сальдо</th>
+                    <th class="text-right col-amount">Вх. сальдо</th>
+                    <th class="text-right col-amount">Прихід</th>
+                    <th class="text-right col-amount">Витрата</th>
+                    <th class="text-right col-amount">Вих. сальдо</th>
                 </tr>
             </thead>
             <tbody>
@@ -128,8 +126,6 @@ $selectedWarehouseIds = $selectedWarehouseIds ?? [];
                     $totalClosing += $row['closing_balance'];
                     $rowId = 'wh-' . $row['warehouse_id'];
 
-                    // Рахуємо сальдо по рухах у хронологічному порядку,
-                    // а виводимо деталі у зворотному порядку дат
                     $detailRows = [];
                     $runningBalance = (float)$row['opening_balance'];
                     foreach ($row['details'] as $detail) {
@@ -139,13 +135,13 @@ $selectedWarehouseIds = $selectedWarehouseIds ?? [];
                     }
                     $detailRows = array_reverse($detailRows);
                 ?>
-                <tr class="expandable report-summary-row" onclick="toggleRow('<?= $rowId ?>')">
-                    <td>
+                <tr class="expandable report-summary-row" data-row-id="<?= $rowId ?>" onclick="toggleRow(this)">
+                    <td class="col-expand">
                         <?php if (!empty($row['details'])): ?>
                         <span class="expand-icon" id="icon-<?= $rowId ?>">▶</span>
                         <?php endif; ?>
                     </td>
-                    <td><?= htmlspecialchars($row['warehouse_name']) ?></td>
+                    <td class="font-medium"><?= htmlspecialchars($row['warehouse_name']) ?></td>
                     <td class="text-right font-mono"><?= formatNum($row['opening_balance']) ?></td>
                     <td class="text-right font-mono"><?= formatNum($row['incoming']) ?></td>
                     <td class="text-right font-mono"><?= formatNum($row['outgoing']) ?></td>
@@ -153,26 +149,26 @@ $selectedWarehouseIds = $selectedWarehouseIds ?? [];
                 </tr>
                 <?php foreach ($detailRows as $d): ?>
                 <tr class="detail-row" data-parent="<?= $rowId ?>" style="display:none" ondblclick="goToMovement(<?= $d['id'] ?>)">
-                    <td></td>
-                    <td style="padding-left:24px">
-                        <span class="text-muted font-mono" style="font-size:11px"><?= formatDateUa($d['date']) ?></span>
+                    <td class="col-expand"></td>
+                    <td class="detail-cell">
+                        <span class="text-muted font-mono"><?= formatDateUa($d['date']) ?></span>
                         <span class="badge <?= $d['incoming'] > 0 ? 'badge-in' : 'badge-out' ?>"><?= $d['type'] ?></span>
                         <span class="text-muted"><?= htmlspecialchars($d['counterpart']) ?></span>
                         <?php if ($d['note']): ?>
-                        <span class="text-muted" style="font-style:italic"> — <?= htmlspecialchars($d['note']) ?></span>
+                        <span class="text-muted detail-note"> — <?= htmlspecialchars($d['note']) ?></span>
                         <?php endif; ?>
                     </td>
-                    <td></td>
                     <td class="text-right font-mono"><?= $d['incoming'] > 0 ? formatNum($d['incoming']) : '' ?></td>
                     <td class="text-right font-mono"><?= $d['outgoing'] > 0 ? formatNum($d['outgoing']) : '' ?></td>
                     <td class="text-right font-mono <?= $d['balance_after'] < 0 ? 'balance-negative' : '' ?>"><?= formatNum($d['balance_after']) ?></td>
+                    <td class="text-right font-mono"></td>
                 </tr>
                 <?php endforeach; ?>
                 <?php endforeach; ?>
                 
                 <tr class="totals-row report-summary-row">
-                    <td></td>
-                    <td>Разом</td>
+                    <td class="col-expand"></td>
+                    <td class="font-bold">Разом</td>
                     <td class="text-right font-mono"><?= formatNum($totalOpening) ?></td>
                     <td class="text-right font-mono"><?= formatNum($totalIn) ?></td>
                     <td class="text-right font-mono"><?= formatNum($totalOut) ?></td>
@@ -192,9 +188,13 @@ $selectedWarehouseIds = $selectedWarehouseIds ?? [];
 </div>
 
 <script>
-function toggleRow(id) {
-    var rows = document.querySelectorAll('[data-parent="' + id + '"]');
-    var icon = document.getElementById('icon-' + id);
+var allWarehouses = <?= json_encode($warehouses ?? [], JSON_UNESCAPED_UNICODE) ?>;
+var selectedWhIds = <?= json_encode($selectedWarehouseIds, JSON_UNESCAPED_UNICODE) ?>;
+
+function toggleRow(row) {
+    var rowId = row.dataset.rowId;
+    var rows = document.querySelectorAll('[data-parent="' + rowId + '"]');
+    var icon = document.getElementById('icon-' + rowId);
     var isHidden = rows[0] && rows[0].style.display === 'none';
     rows.forEach(function(r) { r.style.display = isHidden ? '' : 'none'; });
     if (icon) icon.classList.toggle('expanded', isHidden);
@@ -208,19 +208,12 @@ function toggleAll(expand) {
 function goToMovement(id) {
     window.location.href = '<?= $basePath ?>/movements?highlight=' + id;
 }
-</script>
-<?php endif; ?>
-
-<!-- Warehouse filter modal data -->
-<script>
-var allWarehouses = <?= json_encode($warehouses ?? [], JSON_UNESCAPED_UNICODE) ?>;
-var selectedWhIds = <?= json_encode($selectedWarehouseIds, JSON_UNESCAPED_UNICODE) ?>;
 
 function openWarehouseFilter() {
     var checked = {};
     selectedWhIds.forEach(function(id) { checked[id] = true; });
 
-    var searchHtml = '<input type="text" class="form-input" id="whFilterSearch" placeholder="Пошук складу..." oninput="filterWhList()" style="margin-bottom:10px">';
+    var searchHtml = '<input type="text" class="form-input" id="whFilterSearch" placeholder="Пошук складу..." oninput="filterWhList()">';
     
     var listHtml = '<div class="wh-check-list" id="whCheckList">';
     allWarehouses.forEach(function(w) {
@@ -271,3 +264,4 @@ function applyWhFilter() {
     document.getElementById('reportForm').submit();
 }
 </script>
+<?php endif; ?>

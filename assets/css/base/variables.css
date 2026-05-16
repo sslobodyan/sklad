@@ -1,0 +1,47 @@
+/* ================================================
+   Змінні та скидання стилів
+   ================================================ */
+
+:root {
+    --blue: #0082c9;
+    --blue-dark: #006aa3;
+    --blue-light: #e8f4fd;
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --border: #dce0e5;
+    --text: #1a1a1a;
+    --text-secondary: #5c5c5c;
+    --success: #2e7d32;
+    --danger: #c62828;
+    --warning: #f57c00;
+    --sidebar-width: 200px;
+    --nc-header: 50px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: var(--blue);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}

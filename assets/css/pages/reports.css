@@ -1,0 +1,68 @@
+/* ================================================
+   Стилі для звітів
+   ================================================ */
+
+/* Кольори для чисел */
+.incoming {
+    color: var(--success);
+}
+
+.outgoing {
+    color: var(--danger);
+}
+
+.balance {
+    font-weight: bold;
+}
+
+/* Деталізація */
+.detail-note {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-left: 8px;
+}
+
+.detail-summary-row {
+    background: #fafbfc;
+}
+
+.detail-summary-row:hover {
+    background: #f5f8fc;
+}
+
+.detail-cell {
+    padding-left: 24px !important;
+}
+
+/* Ширина колонок для звіту по ресурсу */
+.col-expand {
+    width: 28px;
+}
+
+.col-reading {
+    width: 100px;
+}
+
+.col-delta {
+    width: 100px;
+}
+
+.col-rate {
+    width: 100px;
+}
+
+.col-correction {
+    width: 80px;
+}
+
+.col-balance {
+    width: 100px;
+}
+
+.col-incoming {
+    width: 100px;
+}
+
+.col-outgoing {
+    width: 100px;
+}

@@ -6,7 +6,7 @@
     <title><?= htmlspecialchars($title ?? 'Складський облік') ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= $basePath ?>/assets/css/style.css">
+    <link rel="stylesheet" href="<?= $basePath ?>/assets/css/main.css">
     <style>
         .flash-container {
             position: fixed;
@@ -45,48 +45,25 @@
             cursor: pointer; padding: 4px; font-size: 18px; opacity: 0.8;
         }
         .flash-message .flash-close:hover { opacity: 1; }
-        
-        .dp-presets {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-        .dp-presets a {
-            padding: 8px 4px;
-            font-size: 11px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            color: var(--text);
-            text-decoration: none;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        .dp-presets a:hover {
-            background: var(--blue-light);
-            border-color: var(--blue);
-            color: var(--blue);
-        }
     </style>
 </head>
 <body>
     <div class="flash-container" id="flashContainer"></div>
-    
+
     <script>
         window.basePath = <?= json_encode($basePath) ?>;
         window.flashMessages = <?= json_encode($flashMessages ?? []) ?>;
         window.isAdmin = <?= json_encode(in_array('admin', $_SESSION['nc_groups'] ?? [])) ?>;
-        
+
         window.applyDateRange = function() {
             var dateFrom = document.getElementById('dateFrom').value;
             var dateTo = document.getElementById('dateTo').value;
-            
+
             if (!dateFrom || !dateTo) {
                 alert('Оберіть обидві дати');
                 return;
             }
-            
+
             fetch(window.basePath + '/settings/dates', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -100,13 +77,13 @@
                 alert('Помилка збереження');
             });
         };
-        
+
         function closeDatePanel() {
             var panel = document.getElementById('datePanel');
             if (panel) panel.classList.remove('open');
         }
     </script>
-    
+
     <div class="app">
         <div class="app-body">
             <aside class="sidebar" id="sidebar">
@@ -249,38 +226,37 @@
         <div class="modal-body" id="modalBody"></div>
     </div>
 
-	<!-- Core -->
-	<script src="<?= $basePath ?>/assets/js/core/utils.js"></script>
-	<script src="<?= $basePath ?>/assets/js/core/sidebar.js"></script>
-	<script src="<?= $basePath ?>/assets/js/core/date-panel.js"></script>
-	<script src="<?= $basePath ?>/assets/js/core/modal.js"></script>
-	<script src="<?= $basePath ?>/assets/js/core/ajax.js"></script>
+    <!-- Core -->
+    <script src="<?= $basePath ?>/assets/js/core/utils.js"></script>
+    <script src="<?= $basePath ?>/assets/js/core/sidebar.js"></script>
+    <script src="<?= $basePath ?>/assets/js/core/date-panel.js"></script>
+    <script src="<?= $basePath ?>/assets/js/core/modal.js"></script>
+    <script src="<?= $basePath ?>/assets/js/core/ajax.js"></script>
 
-	<!-- Components -->
-	<script src="<?= $basePath ?>/assets/js/components/autocomplete.js"></script>
-	<script src="<?= $basePath ?>/assets/js/components/type-indicator.js"></script>
+    <!-- Components -->
+    <script src="<?= $basePath ?>/assets/js/components/autocomplete.js"></script>
+    <script src="<?= $basePath ?>/assets/js/components/type-indicator.js"></script>
 
-	<!-- Modals -->
-	<script src="<?= $basePath ?>/assets/js/modals/warehouse.js"></script>
-	<script src="<?= $basePath ?>/assets/js/modals/material.js"></script>
-	<script src="<?= $basePath ?>/assets/js/modals/movement.js"></script>
-	<script src="<?= $basePath ?>/assets/js/modals/delete.js"></script>
-	<script src="<?= $basePath ?>/assets/js/modals/import.js"></script>
+    <!-- Modals -->
+    <script src="<?= $basePath ?>/assets/js/modals/warehouse.js"></script>
+    <script src="<?= $basePath ?>/assets/js/modals/material.js"></script>
+    <script src="<?= $basePath ?>/assets/js/modals/movement.js"></script>
+    <script src="<?= $basePath ?>/assets/js/modals/delete.js"></script>
+    <script src="<?= $basePath ?>/assets/js/modals/import.js"></script>
 
-	<!-- Main -->
-	<script src="<?= $basePath ?>/assets/js/main.js"></script>
-
+    <!-- Main -->
+    <script src="<?= $basePath ?>/assets/js/main.js"></script>
 
     <script>
         (function() {
             var container = document.getElementById('flashContainer');
             var messages = window.flashMessages || [];
-            
+
             function showFlash(message, type) {
                 var icons = { success: '✓', error: '⚠', info: 'ℹ', warning: '⚡' };
                 var div = document.createElement('div');
                 div.className = 'flash-message ' + type;
-                div.innerHTML = 
+                div.innerHTML =
                     '<span class="flash-icon">' + (icons[type] || 'ℹ') + '</span>' +
                     '<span class="flash-text">' + escapeHtml(message) + '</span>' +
                     '<button class="flash-close" onclick="this.parentElement.remove()">&times;</button>';
@@ -291,16 +267,15 @@
                     setTimeout(function() { div.remove(); }, 300);
                 }, 4000);
             }
-            
+
             function escapeHtml(text) {
                 var div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
             }
-            
+
             messages.forEach(function(msg) { showFlash(msg.message, msg.type); });
         })();
     </script>
 </body>
 </html>
-
