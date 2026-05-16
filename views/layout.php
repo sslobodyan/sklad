@@ -185,12 +185,14 @@
                         <input type="date" id="dateTo" value="<?= htmlspecialchars($globalDateTo) ?>">
                     </div>
                 </div>
-                <div class="dp-presets">
-                    <a href="<?= $basePath ?>/settings/preset/current-month">Поточний місяць</a>
-                    <a href="<?= $basePath ?>/settings/preset/last-month">Минулий місяць</a>
-                    <a href="<?= $basePath ?>/settings/preset/today">Сьогодні</a>
-                    <a href="<?= $basePath ?>/settings/preset/current-year">Поточний рік</a>
-                </div>
+
+<div class="dp-presets">
+    <a href="<?= $basePath ?>/settings/preset/current-month" class="dp-preset-btn">Поточний місяць</a>
+    <a href="<?= $basePath ?>/settings/preset/last-month" class="dp-preset-btn">Минулий місяць</a>
+    <a href="<?= $basePath ?>/settings/preset/today" class="dp-preset-btn">Сьогодні</a>
+    <a href="<?= $basePath ?>/settings/preset/current-year" class="dp-preset-btn">Поточний рік</a>
+</div>
+
                 <button class="dp-btn" onclick="applyDateRange()">Застосувати</button>
             </div>
             <div class="dp-divider"></div>
