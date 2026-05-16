@@ -230,6 +230,7 @@ $printSort = ($sortNames[$sortKey] ?? 'Дата') . ' (' . ($sortDir === 'asc' ?
                         'resource_value' => $m['resource_value'] ?? null,
                         'resource_delta' => $m['resource_delta'] ?? null,
                         'resource_rate' => $m['resource_rate'] ?? null,
+                        'resource_correction' => $m['resource_correction'] ?? null,
                         'resource_unit' => $m['resource_unit'] ?? '',
                         'resource_format' => $m['resource_format'] ?? 'dec2',
                     ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);

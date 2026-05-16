@@ -36,13 +36,21 @@ function viewMovementModal(data) {
         return val.toFixed(2);
     }
 
-    var extraRows = '';
-    if (data.resource_log_id) {
-        extraRows += 
-            '<tr><td class="view-label">Норма</td><td>' + escapeHtml(String(data.resource_rate ?? '—')) + '</td></tr>' +
-            '<tr><td class="view-label">Ресурс</td><td>' + escapeHtml(data.resource_unit || '—') + '</td></tr>' +
-            '<tr><td class="view-label">Показник</td><td>' + escapeHtml(formatResourceValue(data.resource_value, data.resource_format || 'dec2')) + '</td></tr>';
+
+var extraRows = '';
+if (data.resource_log_id) {
+    var correction = parseFloat(data.resource_correction) || 0;
+    var correctionDisplay = '—';
+    if (correction !== 0) {
+        correctionDisplay = (correction > 0 ? '+' : '') + correction + '%';
     }
+    
+    extraRows +=
+        '<tr><td class="view-label">Норма<\/td><td class="font-mono">' + escapeHtml(String(data.resource_rate ?? '—')) + '<\/td><\/tr>' +
+        '<tr><td class="view-label">Поправка<\/td><td class="font-mono">' + escapeHtml(correctionDisplay) + '<\/td><\/tr>' +
+        '<tr><td class="view-label">Показник<\/td><td class="font-mono">' + escapeHtml(formatResourceValue(data.resource_value, data.resource_format || 'dec2')) +
+            ' (' + escapeHtml(data.resource_unit || '—') + ')<\/td><\/tr>';
+}
 
     var content =
         '<table class="view-table">' +
