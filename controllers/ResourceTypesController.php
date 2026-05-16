@@ -30,12 +30,11 @@ public function savetype($id = null): void
         return;
     }
 
-to_log('POST', $_POST);
-
     $name = trim($this->post('name', ''));
     $unit = trim($this->post('unit', ''));
     $format = $this->post('format', 'int');
     $showHours = $this->getCheckbox('show_hours');
+    
     if (!in_array($format, ['int', 'dec2', 'hm'])) {
         $format = 'int';
     }
@@ -45,15 +44,17 @@ to_log('POST', $_POST);
         return;
     }
 
+    // Безпосередньо використовуємо ResourceTypesModel замість ResourceModel
+    $typesModel = new ResourceTypesModel($this->db);
+    
     if ($id) {
-        $this->model->updateType((int)$id, $name, $unit, $format, $showHours);
+        $typesModel->updateType((int)$id, $name, $unit, $format, $showHours);
     } else {
-        $this->model->createType($name, $unit, $format, $showHours);
+        $typesModel->createType($name, $unit, $format, $showHours);
     }
 
     $this->respondAjax(true, $id ? 'Тип оновлено' : 'Тип додано');
 }
-
 
     public function deletetype($id): void
     {

@@ -1,0 +1,26 @@
+[2026-05-17 02:27:12] POST  Array
+(
+    [name] => Напрацювання
+    [unit] => год
+    [format] => dec2
+    [show_hours] => 1
+)
+
+[2026-05-17 02:27:12] public function updateType $showHours   1
+[2026-05-17 02:27:15] POST  Array
+(
+    [name] => Напрацювання
+    [unit] => год
+    [format] => dec2
+)
+
+[2026-05-17 02:27:15] public function updateType $showHours   0
+[2026-05-17 02:27:19] POST  Array
+(
+    [name] => Напрацювання
+    [unit] => год
+    [format] => dec2
+    [show_hours] => 1
+)
+
+[2026-05-17 02:27:19] public function updateType $showHours   1

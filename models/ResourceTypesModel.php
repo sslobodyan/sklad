@@ -32,8 +32,6 @@ public function createType(string $name, string $unit, string $format = 'int', i
 public function updateType(int $id, string $name, string $unit, string $format = 'int', int $showHours = 0): void
 {
 
-to_log('public function updateType $showHours ', $showHours );
-
     $this->setCurrentUser();
     $this->db->query(
         "UPDATE resource_types SET name = ?, unit = ?, format = ?, show_hours = ?, author = ? WHERE id = ?",
