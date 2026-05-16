@@ -22,16 +22,34 @@ class ResourceRatesModel extends Model
         )->fetchAll();
     }
 
-    public function saveRate(int $warehouseId, int $resourceTypeId, int $materialId, float $rate, ?int $sourceWarehouseId, bool $spreadByDay = false): void
-    {
-        $this->setCurrentUser();
+public function saveRate(int $warehouseId, int $resourceTypeId, int $materialId, float $rate, ?int $sourceWarehouseId, bool $spreadByDay = false): void
+{
+    $this->setCurrentUser();
+    
+    // Перевіряємо чи існує запис
+    $exists = $this->db->query(
+        "SELECT id FROM resource_rates WHERE warehouse_id = ? AND resource_type_id = ? AND material_id = ?",
+        [$warehouseId, $resourceTypeId, $materialId]
+    )->fetch();
+    
+    if ($exists) {
+        // Оновлення
         $this->db->query(
-            "INSERT INTO resource_rates (warehouse_id, resource_type_id, material_id, rate, source_warehouse_id, spread_by_day, author)
-             VALUES (?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE rate = VALUES(rate), source_warehouse_id = VALUES(source_warehouse_id), spread_by_day = VALUES(spread_by_day), author = VALUES(author)",
+            "UPDATE resource_rates 
+             SET rate = ?, source_warehouse_id = ?, spread_by_day = ?, author = ?, updated_at = NOW()
+             WHERE warehouse_id = ? AND resource_type_id = ? AND material_id = ?",
+            [$rate, $sourceWarehouseId ?: null, $spreadByDay ? 1 : 0, $this->authorStamp(), $warehouseId, $resourceTypeId, $materialId]
+        );
+    } else {
+        // Вставка нового запису
+        $this->db->query(
+            "INSERT INTO resource_rates (warehouse_id, resource_type_id, material_id, rate, source_warehouse_id, spread_by_day, author, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
             [$warehouseId, $resourceTypeId, $materialId, $rate, $sourceWarehouseId ?: null, $spreadByDay ? 1 : 0, $this->authorStamp()]
         );
     }
+}
+
 
     public function deleteRate(int $id): void
     {

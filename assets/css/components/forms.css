@@ -12,6 +12,7 @@
     font-weight: 500;
     color: var(--text);
     margin-bottom: 5px;
+    padding-right: 10px;
 }
 
 .form-label .required {
@@ -94,6 +95,7 @@
 }
 
 .filter-action-stack {
+
     display: flex;
     gap: 6px;
     align-items: center;

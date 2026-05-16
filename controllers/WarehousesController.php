@@ -89,4 +89,28 @@ class WarehousesController extends Controller
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
+
+public function getone($id = null): void
+{
+    if (!$id) {
+        $this->json(['success' => false, 'error' => 'ID не вказано']);
+        return;
+    }
+    $item = $this->model->getById((int)$id);
+    if (!$item) {
+        $this->json(['success' => false, 'error' => 'Не знайдено']);
+        return;
+    }
+    $this->json([
+        'success' => true, 
+        'data' => [
+            'id' => $item['id'],
+            'name' => $item['name'],
+            'author' => $item['author'] ?? '',
+            'created_at' => $item['created_at'] ?? null,
+            'updated_at' => $item['updated_at'] ?? null
+        ]
+    ]);
+}
+
 }

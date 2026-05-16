@@ -231,4 +231,79 @@ class ResourcesController extends Controller
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
+
+public function getlog($id = null): void
+{
+    if (!$id) {
+        $this->json(['success' => false, 'error' => 'ID не вказано']);
+        return;
+    }
+    $log = $this->model->getLogById((int)$id);
+    if (!$log) {
+        $this->json(['success' => false, 'error' => 'Не знайдено']);
+        return;
+    }
+    $this->json([
+        'success' => true,
+        'data' => [
+            'id' => $log['id'],
+            'author' => $log['author'] ?? '',
+            'created_at' => $log['created_at'] ?? null,
+            'updated_at' => $log['updated_at'] ?? null
+        ]
+    ]);
+}
+
+public function getrate($id = null): void
+{
+    if (!$id) {
+        $this->json(['success' => false, 'error' => 'ID не вказано']);
+        return;
+    }
+    $rate = $this->db->query(
+        "SELECT rr.*, w.name as warehouse_name, rt.name as resource_name, m.name as material_name 
+         FROM resource_rates rr
+         JOIN warehouses w ON rr.warehouse_id = w.id
+         JOIN resource_types rt ON rr.resource_type_id = rt.id
+         JOIN materials m ON rr.material_id = m.id
+         WHERE rr.id = ?",
+        [(int)$id]
+    )->fetch();
+    if (!$rate) {
+        $this->json(['success' => false, 'error' => 'Не знайдено']);
+        return;
+    }
+    $this->json([
+        'success' => true,
+        'data' => [
+            'id' => $rate['id'],
+            'author' => $rate['author'] ?? '',
+            'created_at' => $rate['created_at'] ?? null,
+            'updated_at' => $rate['updated_at'] ?? null
+        ]
+    ]);
+}
+
+public function gettype($id = null): void
+{
+    if (!$id) {
+        $this->json(['success' => false, 'error' => 'ID не вказано']);
+        return;
+    }
+    $type = $this->db->query("SELECT * FROM resource_types WHERE id = ?", [(int)$id])->fetch();
+    if (!$type) {
+        $this->json(['success' => false, 'error' => 'Не знайдено']);
+        return;
+    }
+    $this->json([
+        'success' => true,
+        'data' => [
+            'id' => $type['id'],
+            'author' => $type['author'] ?? '',
+            'created_at' => $type['created_at'] ?? null,
+            'updated_at' => $type['updated_at'] ?? null
+        ]
+    ]);
+}
+
 }

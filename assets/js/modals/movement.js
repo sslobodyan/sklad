@@ -38,9 +38,10 @@ function viewMovementModal(data) {
 
     var extraRows = '';
     if (data.resource_log_id) {
-        extraRows += '<tr><td class="view-label">Норма</td><td>' + escapeHtml(String(data.resource_rate ?? '—')) + '</td></tr>';
-        extraRows += '<tr><td class="view-label">Ресурс</td><td>' + escapeHtml(data.resource_unit || '—') + '</td></tr>';
-        extraRows += '<tr><td class="view-label">Показник</td><td>' + escapeHtml(formatResourceValue(data.resource_value, data.resource_format || 'dec2')) + '</td></tr>';
+        extraRows += 
+            '<tr><td class="view-label">Норма</td><td>' + escapeHtml(String(data.resource_rate ?? '—')) + '</td></tr>' +
+            '<tr><td class="view-label">Ресурс</td><td>' + escapeHtml(data.resource_unit || '—') + '</td></tr>' +
+            '<tr><td class="view-label">Показник</td><td>' + escapeHtml(formatResourceValue(data.resource_value, data.resource_format || 'dec2')) + '</td></tr>';
     }
 
     var content =
@@ -53,11 +54,34 @@ function viewMovementModal(data) {
             extraRows +
             '<tr><td class="view-label">Примітка</td><td>' + escapeHtml(data.note || '—') + '</td></tr>' +
         '</table>' +
-        '<div class="modal-footer">' +
-            '<button type="button" class="btn btn-secondary" onclick="closeModal()">Закрити</button>' +
+        '<div class="modal-footer modal-meta" id="viewMovementMetaFooter">' +
+            '<div class="modal-meta-info"></div>' +
+            '<div class="modal-meta-buttons">' +
+                '<button type="button" class="btn btn-secondary" onclick="closeModal()">Закрити</button>' +
+            '</div>' +
         '</div>';
 
     openModal('Перегляд руху', content);
+    
+    if (data.id) {
+        fetch((typeof basePath !== 'undefined' ? basePath : '') + '/movements/getone/' + data.id)
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.success && result.data) {
+                    var metaHtml = '<div class="modal-meta-line modal-meta-author">' + escapeHtml(result.data.author || '') + '</div>';
+                    if (result.data.updated_at && result.data.updated_at !== result.data.created_at) {
+                        var updated = new Date(result.data.updated_at);
+                        metaHtml += '<div class="modal-meta-line modal-meta-date">' + updated.toLocaleDateString('uk-UA') + ' ' + updated.toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'}) + '</div>';
+                    } else if (result.data.created_at) {
+                        var created = new Date(result.data.created_at);
+                        metaHtml += '<div class="modal-meta-line modal-meta-date">' + created.toLocaleDateString('uk-UA') + ' ' + created.toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'}) + '</div>';
+                    }
+                    var metaFooter = document.querySelector('#viewMovementMetaFooter .modal-meta-info');
+                    if (metaFooter) metaFooter.innerHTML = metaHtml;
+                }
+            })
+            .catch(function() {});
+    }
 }
 
 function openMovementModal(data) {
@@ -119,13 +143,36 @@ function openMovementModal(data) {
                 '<label class="form-label">Примітка</label>' +
                 '<input type="text" name="note" class="form-input" value="' + escapeHtml(data.note || '') + '" placeholder="Необов\'язкове поле">' +
             '</div>' +
-            '<div class="modal-footer">' +
-                '<button type="button" class="btn btn-secondary" onclick="closeModal()">Скасувати</button>' +
-                '<button type="submit" class="btn btn-primary">' + (isEdit ? 'Зберегти' : 'Додати') + '</button>' +
+            '<div class="modal-footer modal-meta" id="movementMetaFooter">' +
+                '<div class="modal-meta-info"></div>' +
+                '<div class="modal-meta-buttons">' +
+                    '<button type="button" class="btn btn-secondary" onclick="closeModal()">Скасувати</button>' +
+                    '<button type="submit" class="btn btn-primary">' + (isEdit ? 'Зберегти' : 'Додати') + '</button>' +
+                '</div>' +
             '</div>' +
         '</form>';
 
     openModal(title, content);
+
+    if (isEdit) {
+        fetch((typeof basePath !== 'undefined' ? basePath : '') + '/movements/getone/' + data.id)
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.success && result.data) {
+                    var metaHtml = '<div class="modal-meta-line modal-meta-author">' + escapeHtml(result.data.author || '') + '</div>';
+                    if (result.data.updated_at && result.data.updated_at !== result.data.created_at) {
+                        var updated = new Date(result.data.updated_at);
+                        metaHtml += '<div class="modal-meta-line modal-meta-date">' + updated.toLocaleDateString('uk-UA') + ' ' + updated.toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'}) + '</div>';
+                    } else if (result.data.created_at) {
+                        var created = new Date(result.data.created_at);
+                        metaHtml += '<div class="modal-meta-line modal-meta-date">' + created.toLocaleDateString('uk-UA') + ' ' + created.toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'}) + '</div>';
+                    }
+                    var metaFooter = document.querySelector('#movementMetaFooter .modal-meta-info');
+                    if (metaFooter) metaFooter.innerHTML = metaHtml;
+                }
+            })
+            .catch(function() {});
+    }
 
     setTimeout(function() {
         var fromSel = document.querySelector('#selFrom');

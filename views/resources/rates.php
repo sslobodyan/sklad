@@ -181,14 +181,42 @@ function openRateModal(id, materialId, rate, sourceWhId, spreadByDay) {
                 '<input type="checkbox" name="spread_by_day" value="1"' + (spreadByDay ? ' checked' : '') + '>' +
                 '<span>Рознести по днях (витрата рівномірно по кожному дню)</span>' +
             '</label>' +
-            '<div class="modal-footer">' +
-                '<button type="button" class="btn btn-secondary" onclick="closeModal()">Скасувати</button>' +
-                '<button type="submit" class="btn btn-primary">' + (isEdit ? 'Зберегти' : 'Додати') + '</button>' +
+            '<div class="modal-footer modal-meta" id="rateMetaFooter">' +
+                '<div class="modal-meta-info"></div>' +
+                '<div class="modal-meta-buttons">' +
+                    '<button type="button" class="btn btn-secondary" onclick="closeModal()">Скасувати</button>' +
+                    '<button type="submit" class="btn btn-primary">' + (isEdit ? 'Зберегти' : 'Додати') + '</button>' +
+                '</div>' +
             '</div>' +
         '</form>';
 
     openModal(title, content);
+
+    if (isEdit) {
+        fetch(basePath + '/resources/getrate/' + id)
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.success && result.data) {
+                    var metaHtml = '<div class="modal-meta-line modal-meta-author">';
+                    if (result.data.author) {
+                        metaHtml += escapeHtml(result.data.author);
+                    }
+                    metaHtml += '</div><div class="modal-meta-line modal-meta-date">';
+                    if (result.data.updated_at && result.data.updated_at !== result.data.created_at) {
+                        var updated = new Date(result.data.updated_at);
+                        metaHtml += updated.toLocaleDateString('uk-UA') + ' ' + updated.toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+                    } else if (result.data.created_at) {
+                        var created = new Date(result.data.created_at);
+                        metaHtml += created.toLocaleDateString('uk-UA') + ' ' + created.toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+                    }
+                    metaHtml += '</div>';
+                    document.querySelector('#rateMetaFooter .modal-meta-info').innerHTML = metaHtml;
+                }
+            })
+            .catch(function() {});
+    }
 }
+
 </script>
 <?php endif; ?>
 <?php endif; ?>

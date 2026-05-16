@@ -41,7 +41,7 @@ abstract class Model
             // Юзер не визначений — пишемо IP
             $name = 'ip ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
         }
-        return date('Y.m.d') . ', ' . $name;
+        return $name;
     }
 
     /**
