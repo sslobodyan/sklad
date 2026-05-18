@@ -173,6 +173,9 @@ function formatNum($n) {
                     <td class="col-expand"></td>
                     <td class="detail-cell">
                         <?= date('d.m.Y', strtotime($row['date'])) ?>
+                        <?php if ($row['has_manual']): ?>
+                            <span class="manual-badge">⚠️ Ручне списання</span>
+                        <?php endif; ?>
                         <?php if (!empty($row['note'])): ?>
                         <span class="detail-note">(<?= htmlspecialchars($row['note']) ?>)</span>
                         <?php endif; ?>
