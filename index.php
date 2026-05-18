@@ -135,6 +135,9 @@ if ($controllerName === 'MovementsController') {
         $controllerName = 'MovementsExportController';
         $action = 'export';
         $id = null;
+    } elseif ($action === 'history') {
+        $controllerName = 'MovementsController';
+        $action = 'history';
     }
 }
 

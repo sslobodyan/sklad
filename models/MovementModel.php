@@ -340,4 +340,41 @@ class MovementModel extends Model
         usort($report, fn($a, $b) => strcmp($a['warehouse_name'], $b['warehouse_name']));
         return $report;
     }
+
+/**
+ * Отримати історію змін руху
+ */
+public function getHistory(int $movementId): array
+{
+    return $this->db->query(
+        "SELECT * FROM movements_history 
+         WHERE id = ? 
+         ORDER BY changed_at ASC",
+        [$movementId]
+    )->fetchAll();
+}
+
+public function history($id = null): void
+{
+    if (!$id) {
+        $this->json(['success' => false, 'error' => 'ID не вказано']);
+        return;
+    }
+    
+    $history = $this->model->getHistory((int)$id);
+    
+    foreach ($history as &$item) {
+        $item['changed_at_formatted'] = date('d.m.Y H:i:s', strtotime($item['changed_at']));
+        if ($item['action'] === 'UPDATE') {
+            $item['action_text'] = 'Редагування';
+            // Для порівняння змін потрібна стара версія запису
+            // Вона вже зберігається в цьому ж рядку історії
+        } elseif ($item['action'] === 'DELETE') {
+            $item['action_text'] = 'Видалення';
+        }
+    }
+    
+    $this->json(['success' => true, 'history' => $history]);
+}
+
 }

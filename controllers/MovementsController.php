@@ -165,4 +165,32 @@ class MovementsController extends Controller
         
         return ['key' => $sortKey, 'dir' => $sortDir, 'orderBy' => $orderBy];
     }
+
+/**
+ * Отримати історію змін для AJAX
+ */
+public function history($id = null): void
+{
+    if (!$id) {
+        $this->json(['success' => false, 'error' => 'ID не вказано']);
+        return;
+    }
+    
+    $history = $this->model->getHistory((int)$id);
+    
+    // Форматуємо дати
+    foreach ($history as &$item) {
+        $item['changed_at_formatted'] = date('d.m.Y H:i:s', strtotime($item['changed_at']));
+        if ($item['action'] === 'UPDATE') {
+            $item['action_text'] = 'Редагування';
+        } elseif ($item['action'] === 'DELETE') {
+            $item['action_text'] = 'Видалення';
+        } else {
+            $item['action_text'] = $item['action'];
+        }
+    }
+    
+    $this->json(['success' => true, 'history' => $history]);
+}
+
 }
