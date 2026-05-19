@@ -150,17 +150,35 @@
                             <span>Звіт по ресурсу</span>
                         </a>
                     </div>
-                    <?php if (in_array('admin', $_SESSION['nc_groups'] ?? [])): ?>
-                    <div class="nav-group">
-                        <div class="nav-group-label">Система</div>
-                        <a href="<?= $basePath ?>/settings/simple" class="nav-item <?= $activePage === 'settings-simple' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
-                            </svg>
-                            <span>Заправка</span>
-                        </a>
-                    </div>
-                    <?php endif; ?>
+
+<?php if (in_array('admin', $_SESSION['nc_groups'] ?? [])): ?>
+<div class="nav-group">
+    <div class="nav-group-label">Система</div>
+    <a href="<?= $basePath ?>/settings/simple" class="nav-item <?= $activePage === 'settings-simple' ? 'active' : '' ?>">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+        </svg>
+        <span>Заправка</span>
+    </a>
+    <a href="<?= $basePath ?>/admin/backup" class="nav-item <?= $activePage === 'admin-backup' ? 'active' : '' ?>">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 11H5M5 5h14v14H5z"/>
+            <polygon points="12 8 15 12 9 12 12 8"/>
+            <path d="M12 12v4"/>
+        </svg>
+        <span>Backup DB</span>
+    </a>
+    <a href="<?= $basePath ?>/admin/restore" class="nav-item <?= $activePage === 'admin-restore' ? 'active' : '' ?>">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 11H5M5 5h14v14H5z"/>
+            <polygon points="12 12 9 16 15 16 12 12"/>
+            <path d="M12 12V8"/>
+        </svg>
+        <span>Restore DB</span>
+    </a>
+</div>
+<?php endif; ?>
+
                 </nav>
             </aside>
 

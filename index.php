@@ -196,6 +196,27 @@ if ($controllerName === 'ReportsController') {
 }
 
 // =============================================
+// Спеціальні маршрути для адміністрування
+// =============================================
+if ($route === 'admin/backup') {
+    $controllerName = 'AdminController';
+    $action = 'backup';
+    $id = null;
+} elseif ($route === 'admin/restore') {
+    $controllerName = 'AdminController';
+    $action = 'restore';
+    $id = null;
+} elseif ($route === 'admin/dobackup') {
+    $controllerName = 'AdminController';
+    $action = 'doBackup';
+    $id = null;
+} elseif ($route === 'admin/dorestore') {
+    $controllerName = 'AdminController';
+    $action = 'doRestore';
+    $id = null;
+}
+
+// =============================================
 // Перевірка існування контролера
 // =============================================
 $controllerFile = ROOT_PATH . '/controllers/' . $controllerName . '.php';
