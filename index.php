@@ -48,7 +48,7 @@ if ($ncUser !== null && $ncSig !== null) {
         $authConfig = require $authFile;
     }
     $secret = $authConfig['secret'] ?? '';
-    $maxAge = $authConfig['max_age'] ?? 3600;
+    $maxAge = $authConfig['max_age'] ?? 86400 * 30;
     
     // Перевірити підпис
     $expectedSig = hash_hmac('sha256', $ncUser . '|' . $ncGroups . '|' . $ncTs, $secret);

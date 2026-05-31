@@ -311,3 +311,24 @@ function openMovementModal(data) {
         }
     }, 100);
 }
+
+/**
+ * Створення копії існуючого руху
+ * @param {Object} data - дані руху (з `$jsData`)
+ */
+function copyMovement(data) {
+    // Створюємо об'єкт-копію без id та без resource_log_id
+    var copyData = {
+        movement_date: data.movement_date,
+        warehouse_from_id: data.warehouse_from_id,
+        warehouse_to_id: data.warehouse_to_id,
+        material_id: data.material_id,
+        quantity: data.quantity,
+        note: data.note || '',
+        // НЕ передаємо id, resource_log_id, resource_*
+        // це буде новий запис
+    };
+    // Відкриваємо модальне вікно для створення НОВОГО запису
+    // Передаємо copyData без поля id
+    openMovementModal(copyData);
+}
