@@ -84,22 +84,6 @@
             <aside class="sidebar" id="sidebar">
                 <nav class="sidebar-nav">
                     <div class="nav-group">
-                        <div class="nav-group-label">Довідники</div>
-                        <a href="<?= $basePath ?>/warehouses" class="nav-item <?= $activePage === 'warehouses' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                                <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-                            </svg>
-                            <span>Склади</span>
-                        </a>
-                        <a href="<?= $basePath ?>/materials" class="nav-item <?= $activePage === 'materials' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-                            </svg>
-                            <span>Матеріали</span>
-                        </a>
-                    </div>
-                    <div class="nav-group">
                         <div class="nav-group-label">Документи</div>
                         <a href="<?= $basePath ?>/movements?date_from=<?= urlencode($globalDateFrom) ?>&date_to=<?= urlencode($globalDateTo) ?>" class="nav-item <?= $activePage === 'movements' ? 'active' : '' ?>">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -112,21 +96,6 @@
                                 <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
                             </svg>
                             <span>Витрата ресурсів</span>
-                        </a>
-                    </div>
-                    <div class="nav-group">
-                        <div class="nav-group-label">Ресурси</div>
-                        <a href="<?= $basePath ?>/resources/rates" class="nav-item <?= $activePage === 'resource-rates' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
-                            </svg>
-                            <span>Норми</span>
-                        </a>
-                        <a href="<?= $basePath ?>/resources/types" class="nav-item <?= $activePage === 'resource-types' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 6h16M4 12h16M4 18h7"/>
-                            </svg>
-                            <span>Типи ресурсів</span>
                         </a>
                     </div>
                     <div class="nav-group">
@@ -148,6 +117,34 @@
                                 <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
                             </svg>
                             <span>Звіт по ресурсу</span>
+                        </a>
+                    </div>
+                    <div class="nav-group">
+                        <div class="nav-group-label">Довідники</div>
+                        <a href="<?= $basePath ?>/warehouses" class="nav-item <?= $activePage === 'warehouses' ? 'active' : '' ?>">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                                <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+                            </svg>
+                            <span>Склади</span>
+                        </a>
+                        <a href="<?= $basePath ?>/materials" class="nav-item <?= $activePage === 'materials' ? 'active' : '' ?>">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                            </svg>
+                            <span>Матеріали</span>
+                        </a>
+                        <a href="<?= $basePath ?>/resources/types" class="nav-item <?= $activePage === 'resource-types' ? 'active' : '' ?>">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 6h16M4 12h16M4 18h7"/>
+                            </svg>
+                            <span>Типи ресурсів</span>
+                        </a>
+                        <a href="<?= $basePath ?>/resources/rates" class="nav-item <?= $activePage === 'resource-rates' ? 'active' : '' ?>">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
+                            </svg>
+                            <span>Норми списання</span>
                         </a>
                     </div>
 
