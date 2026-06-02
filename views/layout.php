@@ -84,6 +84,15 @@
             <aside class="sidebar" id="sidebar">
                 <nav class="sidebar-nav">
                     <div class="nav-group">
+
+    <a href="<?= $basePath ?>/dashboard" class="nav-item <?= $activePage === 'dashboard' ? 'active' : '' ?>">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-6 9 6v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Головна</span>
+    </a>
+
                         <div class="nav-group-label">Документи</div>
                         <a href="<?= $basePath ?>/movements?date_from=<?= urlencode($globalDateFrom) ?>&date_to=<?= urlencode($globalDateTo) ?>" class="nav-item <?= $activePage === 'movements' ? 'active' : '' ?>">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

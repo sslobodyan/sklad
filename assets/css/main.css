@@ -19,6 +19,7 @@
 /* Pages */
 @import url('pages/reports.css');
 @import url('pages/resources.css');
+@import url('pages/dashboard.css');
 
 /* Utils */
 @import url('utils/animations.css');

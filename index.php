@@ -114,8 +114,15 @@ $route = substr($route, strlen(BASE_PATH));
 $route = trim($route, '/');
 
 if (empty($route)) {
-    header('Location: ' . BASE_PATH . '/movements');
+    header('Location: ' . BASE_PATH . '/dashboard');
     exit;
+}
+
+// Додати перевірку для dashboard (вже є в списку, але додамо явно)
+if ($route === 'dashboard') {
+    $controllerName = 'DashboardController';
+    $action = 'index';
+    $id = null;
 }
 
 $parts = explode('/', $route);
