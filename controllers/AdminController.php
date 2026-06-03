@@ -186,107 +186,103 @@ class AdminController extends Controller
     /**
      * Сторінка управління користувачами
      */
-    public function users(): void
-    {
-        $this->checkAdmin();
-        $this->checkAccess('users');
-        
-        $userRoleModel = new UserRoleModel($this->db);
-        $users = $userRoleModel->getAllUsers();
-        
-        $this->render('admin/users', [
-            'title' => 'Користувачі системи',
-            'users' => $users,
-            'activePage' => 'admin-users',
-        ]);
-    }
+public function users(): void
+{
+    $this->checkAdmin();
+    $this->checkAccess('users');
+    
+    $userRoleModel = new UserRoleModel($this->db);
+    $users = $userRoleModel->getAllUsers();
+    
+    $this->render('admin/users', [
+        'title' => 'Користувачі системи',
+        'users' => $users,
+        'activePage' => 'admin-users',
+    ]);
+}
 
-    /**
-     * Форма редагування користувача
-     */
-    public function userEdit($id = null): void
-    {
-        $this->checkAdmin();
-        $this->checkAccess('userEdit');
-        
-        $userRoleModel = new UserRoleModel($this->db);
-        $warehouseModel = new WarehouseModel($this->db);
-        $materialModel = new MaterialModel($this->db);
-        $resourceModel = new ResourceModel($this->db);
-        
-        $user = null;
-        if ($id) {
-            $allUsers = $userRoleModel->getAllUsers();
-            foreach ($allUsers as $u) {
-                if ($u['id'] == $id) {
-                    $user = $u;
-                    break;
-                }
+public function userEdit($id = null): void
+{
+    $this->checkAdmin();
+    $this->checkAccess('userEdit');
+    
+    $userRoleModel = new UserRoleModel($this->db);
+    $warehouseModel = new WarehouseModel($this->db);
+    $materialModel = new MaterialModel($this->db);
+    $resourceModel = new ResourceModel($this->db);
+    
+    $user = null;
+    if ($id) {
+        $allUsers = $userRoleModel->getAllUsers();
+        foreach ($allUsers as $u) {
+            if ($u['id'] == $id) {
+                $user = $u;
+                break;
             }
         }
-        
-        if (!$user) {
-            $this->flash('error', 'Користувача не знайдено');
-            $this->redirect('admin/users');
-            return;
-        }
-        
-        $warehouses = $warehouseModel->getAll('name ASC');
-        $materials = $materialModel->getAll('name ASC');
-        $resourceTypes = $resourceModel->getTypes();
-        
-        $this->render('admin/user_edit', [
-            'title' => 'Редагування користувача',
-            'user' => $user,
-            'warehouses' => $warehouses,
-            'materials' => $materials,
-            'resourceTypes' => $resourceTypes,
-            'activePage' => 'admin-users',
-        ]);
     }
+    
+    $warehouses = $warehouseModel->getAll('name ASC');
+    $materials = $materialModel->getAll('name ASC');
+    $resourceTypes = $resourceModel->getTypes();
+    
+    $this->render('admin/user_edit', [
+        'title' => 'Редагування користувача',
+        'user' => $user,
+        'warehouses' => $warehouses,
+        'materials' => $materials,
+        'resourceTypes' => $resourceTypes,
+        'activePage' => 'admin-users',
+    ]);
+}
 
-    /**
-     * Збереження користувача
-     */
-    public function userSave(): void
-    {
-        $this->checkAdmin();
-        $this->checkAccess('userSave');
-        
-        if (!$this->isPost()) {
-            $this->redirect('admin/users');
-            return;
-        }
-        
-        $ncUser = $this->post('nc_user');
-        $role = $this->post('role', 'viewer');
-        $allowedWarehouses = $this->post('allowed_warehouses');
-        $allowedMaterials = $this->post('allowed_materials');
-        $allowedResourceTypes = $this->post('allowed_resource_types');
-        $canEditRates = (bool)$this->post('can_edit_rates');
-        $canExport = (bool)$this->post('can_export');
-        $canImport = (bool)$this->post('can_import');
-        
-        if (empty($ncUser)) {
-            $this->flash('error', 'Логін користувача обов\'язковий');
-            $this->redirect('admin/users');
-            return;
-        }
-        
-        $userRoleModel = new UserRoleModel($this->db);
-        $userRoleModel->createOrUpdate($ncUser, [
-            'role' => $role,
-            'allowed_warehouses' => $allowedWarehouses ? explode(',', $allowedWarehouses) : null,
-            'allowed_materials' => $allowedMaterials ? explode(',', $allowedMaterials) : null,
-            'allowed_resource_types' => $allowedResourceTypes ? explode(',', $allowedResourceTypes) : null,
-            'can_edit_rates' => $canEditRates,
-            'can_export' => $canExport,
-            'can_import' => $canImport,
-        ]);
-        
-        $this->flash('success', 'Користувача збережено');
+public function userSave(): void
+{
+    $this->checkAdmin();
+    $this->checkAccess('userSave');
+    
+    if (!$this->isPost()) {
         $this->redirect('admin/users');
+        return;
     }
+    
+    $ncUser = $this->post('nc_user');
+    $role = $this->post('role', 'viewer');
+    
+    $allowedWarehouses = $this->post('allowed_warehouses');
+    $allowedWarehouses = !empty($allowedWarehouses) ? array_filter($allowedWarehouses) : null;
+    
+    $allowedMaterials = $this->post('allowed_materials');
+    $allowedMaterials = !empty($allowedMaterials) ? array_filter($allowedMaterials) : null;
+    
+    $allowedResourceTypes = $this->post('allowed_resource_types');
+    $allowedResourceTypes = !empty($allowedResourceTypes) ? array_filter($allowedResourceTypes) : null;
+    
+    $canEditRates = (bool)$this->post('can_edit_rates');
+    $canExport = (bool)$this->post('can_export');
+    $canImport = (bool)$this->post('can_import');
+    
+    if (empty($ncUser)) {
+        $this->flash('error', 'Логін користувача обов\'язковий');
+        $this->redirect('admin/users');
+        return;
+    }
+    
+    $userRoleModel = new UserRoleModel($this->db);
+    $userRoleModel->createOrUpdate($ncUser, [
+        'role' => $role,
+        'allowed_warehouses' => $allowedWarehouses,
+        'allowed_materials' => $allowedMaterials,
+        'allowed_resource_types' => $allowedResourceTypes,
+        'can_edit_rates' => $canEditRates,
+        'can_export' => $canExport,
+        'can_import' => $canImport,
+    ]);
+    
+    $this->flash('success', 'Користувача збережено');
+    $this->redirect('admin/users');
+}
+
 
     /**
      * Видалення користувача

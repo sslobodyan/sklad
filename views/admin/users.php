@@ -33,7 +33,10 @@
                     <th>Роль</th>
                     <th>Дозволені склади</th>
                     <th>Дозволені матеріали</th>
+                    <th>Дозволені типи ресурсів</th>
                     <th class="text-center">Експорт</th>
+                    <th class="text-center">Імпорт</th>
+                    <th class="text-center">Норми</th>
                     <th class="text-right">Дії</th>
                 </tr>
             </thead>
@@ -53,9 +56,12 @@
                         ?>
                         <span class="badge"><?= $roleLabel ?></span>
                     </td>
-                    <td class="text-muted"><?= $user['allowed_warehouses'] === null ? 'Всі' : (empty($user['allowed_warehouses']) ? '—' : 'ID: ' . implode(', ', $user['allowed_warehouses'])) ?></td>
-                    <td class="text-muted"><?= $user['allowed_materials'] === null ? 'Всі' : (empty($user['allowed_materials']) ? '—' : 'ID: ' . implode(', ', $user['allowed_materials'])) ?></td>
+                    <td class="text-muted"><?= $user['allowed_warehouses'] === null ? 'Всі' : (empty($user['allowed_warehouses']) ? '—' : count($user['allowed_warehouses']) . ' шт.') ?></td>
+                    <td class="text-muted"><?= $user['allowed_materials'] === null ? 'Всі' : (empty($user['allowed_materials']) ? '—' : count($user['allowed_materials']) . ' шт.') ?></td>
+                    <td class="text-muted"><?= $user['allowed_resource_types'] === null ? 'Всі' : (empty($user['allowed_resource_types']) ? '—' : count($user['allowed_resource_types']) . ' шт.') ?></td>
                     <td class="text-center"><?= $user['can_export'] ? '✓' : '—' ?></td>
+                    <td class="text-center"><?= $user['can_import'] ? '✓' : '—' ?></td>
+                    <td class="text-center"><?= $user['can_edit_rates'] ? '✓' : '—' ?></td>
                     <td class="text-right actions no-print-col">
                         <a href="<?= $basePath ?>/admin/permissions?user_id=<?= $user['id'] ?>" class="btn-icon" title="Права доступу">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
