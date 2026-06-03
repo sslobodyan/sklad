@@ -19,6 +19,7 @@ abstract class Controller
     {
         $data['basePath'] = BASE_PATH;
         $data['activePage'] = $data['activePage'] ?? '';
+        $data['db'] = $this->db;
         
         // Flash повідомлення (масив)
         $flashMessages = $_SESSION['flash_messages'] ?? [];

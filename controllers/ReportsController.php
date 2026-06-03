@@ -5,6 +5,8 @@
 
 class ReportsController extends Controller
 {
+    use AuthorizeTrait;
+
     private MovementModel $movementModel;
     private WarehouseModel $warehouseModel;
     private MaterialModel $materialModel;
@@ -24,6 +26,8 @@ class ReportsController extends Controller
      */
     public function warehouse(): void
     {
+        $this->checkAccess('warehouse');
+
         $warehouseId = (int)$this->get('warehouse_id', 0);
         $dateFrom = $this->get('date_from') ?: SettingsController::getDateFrom();
         $dateTo = $this->get('date_to') ?: SettingsController::getDateTo();
@@ -55,6 +59,8 @@ class ReportsController extends Controller
      */
     public function material(): void
     {
+        $this->checkAccess('material');
+
         $materialId = (int)$this->get('material_id', 0);
         $dateFrom = $this->get('date_from') ?: SettingsController::getDateFrom();
         $dateTo = $this->get('date_to') ?: SettingsController::getDateTo();
@@ -106,6 +112,8 @@ class ReportsController extends Controller
      */
     public function resource(): void
     {
+        $this->checkAccess('resource');
+
         $dateFrom = $this->get('date_from') ?: SettingsController::getDateFrom();
         $dateTo   = $this->get('date_to')   ?: SettingsController::getDateTo();
 
@@ -141,4 +149,11 @@ class ReportsController extends Controller
             'activePage'          => 'report-resource',
         ]);
     }
+
+    private function isAjax(): bool
+    {
+        return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+           strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    }
+
 }

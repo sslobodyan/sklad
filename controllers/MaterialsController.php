@@ -5,6 +5,8 @@
 
 class MaterialsController extends Controller
 {
+    use AuthorizeTrait;
+
     private MaterialModel $model;
 
     public function __construct(Database $db)
@@ -15,6 +17,9 @@ class MaterialsController extends Controller
 
     public function index(): void
     {
+
+        $this->checkAccess('index');
+
         $materials = $this->model->getAll('name ASC');
         $usedIds = $this->model->getUsedIds();
         
@@ -31,6 +36,9 @@ class MaterialsController extends Controller
      */
     public function save($id = null): void
     {
+
+        $this->checkAccess('save');
+
         if (!$this->isPost()) {
             $this->redirect('materials');
             return;
@@ -65,6 +73,9 @@ class MaterialsController extends Controller
 
     public function delete($id): void
     {
+
+        $this->checkAccess('delete');
+
         if ($this->model->isUsed((int)$id)) {
             $this->flash('error', 'Неможливо видалити: матеріал використовується в документах');
         } else {
@@ -92,6 +103,9 @@ class MaterialsController extends Controller
 
 public function getone($id = null): void
 {
+
+    $this->checkAccess('getone');
+
     if (!$id) {
         $this->json(['success' => false, 'error' => 'ID не вказано']);
         return;

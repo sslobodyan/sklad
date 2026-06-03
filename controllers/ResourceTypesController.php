@@ -4,6 +4,8 @@
  */
 class ResourceTypesController extends Controller
 {
+    use AuthorizeTrait;
+
     private ResourceModel $model;
 
     public function __construct(Database $db)
@@ -14,6 +16,9 @@ class ResourceTypesController extends Controller
 
     public function types(): void
     {
+
+        $this->checkAccess('types');
+
         $types = $this->model->getTypes();
 
         $this->render('resources/types', [
@@ -25,6 +30,9 @@ class ResourceTypesController extends Controller
 
 public function savetype($id = null): void
 {
+
+    $this->checkAccess('savetype');
+
     if (!$this->isPost()) {
         $this->redirect('resources/types');
         return;
@@ -58,6 +66,9 @@ public function savetype($id = null): void
 
     public function deletetype($id): void
     {
+
+        $this->checkAccess('deletetype');
+
         if ($this->model->isTypeUsed((int)$id)) {
             $this->flash('error', 'Неможливо видалити: тип використовується');
         } else {
@@ -82,4 +93,5 @@ public function savetype($id = null): void
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
+
 }

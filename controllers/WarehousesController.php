@@ -5,6 +5,8 @@
 
 class WarehousesController extends Controller
 {
+    use AuthorizeTrait;
+
     private WarehouseModel $model;
 
     public function __construct(Database $db)
@@ -15,6 +17,8 @@ class WarehousesController extends Controller
 
     public function index(): void
     {
+        $this->checkAccess('index');
+
         $warehouses = $this->model->getAll('name ASC');
         $usedIds = $this->model->getUsedIds();
         
@@ -31,6 +35,9 @@ class WarehousesController extends Controller
      */
     public function save($id = null): void
     {
+        
+        $this->checkAccess('save');
+
         if (!$this->isPost()) {
             $this->redirect('warehouses');
             return;
@@ -65,6 +72,8 @@ class WarehousesController extends Controller
 
     public function delete($id): void
     {
+        $this->checkAccess('delete');
+
         if ($this->model->isUsed((int)$id)) {
             $this->flash('error', 'Неможливо видалити: склад використовується в документах');
         } else {
@@ -92,6 +101,8 @@ class WarehousesController extends Controller
 
 public function getone($id = null): void
 {
+        $this->checkAccess('getone');
+
     if (!$id) {
         $this->json(['success' => false, 'error' => 'ID не вказано']);
         return;

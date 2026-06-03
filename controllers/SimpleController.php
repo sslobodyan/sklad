@@ -11,6 +11,7 @@ class SimpleController extends Controller
 {
     use SimpleConfigTrait;
     use SimpleResponseTrait;
+    use AuthorizeTrait;
 
     private MovementModel $movementModel;
     private WarehouseModel $warehouseModel;
@@ -30,7 +31,9 @@ class SimpleController extends Controller
 
     public function index(): void
     {
-        date_default_timezone_set('Europe/Kiev');
+        $this->checkAccess('index');
+        
+        date_default_timezone_set('Europe/Kyiv');
         
         $simpleWarehouseId = $this->getSimpleWarehouseId();
         
@@ -65,6 +68,8 @@ class SimpleController extends Controller
 
     public function incoming(): void
     {
+        $this->checkAccess('incoming');
+        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['success' => false, 'error' => 'Невірний метод']);
             return;
@@ -114,6 +119,8 @@ class SimpleController extends Controller
 
     public function outgoing(): void
     {
+        $this->checkAccess('outgoing');
+        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['success' => false, 'error' => 'Невірний метод']);
             return;
@@ -173,6 +180,8 @@ class SimpleController extends Controller
 
     public function movements(): void
     {
+        $this->checkAccess('movements');
+        
         $simpleWarehouseId = $this->getSimpleWarehouseId();
         if (!$simpleWarehouseId) {
             $this->jsonResponse(['success' => false, 'error' => 'Склад не налаштовано']);

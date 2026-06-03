@@ -10,6 +10,7 @@ class MovementsController extends Controller
 {
     use MovementRedirectTrait;
     use MovementValidationTrait;
+    use AuthorizeTrait;
 
     private MovementModel $model;
     private WarehouseModel $warehouseModel;
@@ -25,6 +26,9 @@ class MovementsController extends Controller
 
     public function index(): void
     {
+
+        $this->checkAccess('index');
+
         $highlightId = $this->get('highlight');
         $filters = [
             'date_from' => $this->get('date_from'),
@@ -62,6 +66,10 @@ class MovementsController extends Controller
 
     public function save($id = null): void
     {
+
+        $this->checkAccess('save');
+
+
         if (!$this->isPost()) {
             $this->redirect('movements');
             return;
@@ -109,6 +117,9 @@ class MovementsController extends Controller
 
     public function delete($id): void
     {
+
+        $this->checkAccess('delete');
+
         $existing = $this->model->getById((int)$id);
         
         if ($existing && !empty($existing['resource_log_id'])) {
@@ -131,6 +142,9 @@ class MovementsController extends Controller
 
     public function getone($id = null): void
     {
+
+        $this->checkAccess('getone');
+        
         if (!$id) {
             $this->json(['success' => false, 'error' => 'ID не вказано']);
             return;
@@ -171,6 +185,9 @@ class MovementsController extends Controller
  */
 public function history($id = null): void
 {
+
+    $this->checkAccess('history');
+
     if (!$id) {
         $this->json(['success' => false, 'error' => 'ID не вказано']);
         return;

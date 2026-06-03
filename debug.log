@@ -1,0 +1,18 @@
+[2026-06-03 17:10:00] Помилка виконання  Array
+(
+    [error] => View not found: admin/users
+    [route] => admin/users
+)
+
+[2026-06-03 17:22:29] Помилка виконання  Array
+(
+    [error] => View not found: admin/users
+    [route] => admin/users
+)
+
+[2026-06-03 17:23:09] Помилка виконання  Array
+(
+    [error] => View not found: admin/user_edit
+    [route] => admin/users/edit
+)
+

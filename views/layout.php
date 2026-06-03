@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= $basePath ?>/assets/css/main.css">
+
+
     <style>
         .flash-container {
             position: fixed;
@@ -83,108 +85,43 @@
         <div class="app-body">
             <aside class="sidebar" id="sidebar">
                 <nav class="sidebar-nav">
-                    <div class="nav-group">
-
-    <a href="<?= $basePath ?>/dashboard" class="nav-item <?= $activePage === 'dashboard' ? 'active' : '' ?>">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 9l9-6 9 6v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-        <span>Головна</span>
-    </a>
-
-                        <div class="nav-group-label">Документи</div>
-                        <a href="<?= $basePath ?>/movements?date_from=<?= urlencode($globalDateFrom) ?>&date_to=<?= urlencode($globalDateTo) ?>" class="nav-item <?= $activePage === 'movements' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M8 3l4 8 5-5 5 15H2L8 3z"/>
-                            </svg>
-                            <span>Рух матеріалів</span>
-                        </a>
-                        <a href="<?= $basePath ?>/resources?date_from=<?= urlencode($globalDateFrom) ?>&date_to=<?= urlencode($globalDateTo) ?>" class="nav-item <?= $activePage === 'resources' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                            </svg>
-                            <span>Витрата ресурсів</span>
-                        </a>
-                    </div>
-                    <div class="nav-group">
-                        <div class="nav-group-label">Звіти</div>
-                        <a href="<?= $basePath ?>/reports/warehouse" class="nav-item <?= $activePage === 'report-warehouse' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
-                            </svg>
-                            <span>Звіт по складу</span>
-                        </a>
-                        <a href="<?= $basePath ?>/reports/material" class="nav-item <?= $activePage === 'report-material' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/>
-                            </svg>
-                            <span>Звіт по матеріалу</span>
-                        </a>
-                        <a href="<?= $basePath ?>/reports/resource" class="nav-item <?= $activePage === 'report-resource' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                            </svg>
-                            <span>Звіт по ресурсу</span>
-                        </a>
-                    </div>
-                    <div class="nav-group">
-                        <div class="nav-group-label">Довідники</div>
-                        <a href="<?= $basePath ?>/warehouses" class="nav-item <?= $activePage === 'warehouses' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                                <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-                            </svg>
-                            <span>Склади</span>
-                        </a>
-                        <a href="<?= $basePath ?>/materials" class="nav-item <?= $activePage === 'materials' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-                            </svg>
-                            <span>Матеріали</span>
-                        </a>
-                        <a href="<?= $basePath ?>/resources/types" class="nav-item <?= $activePage === 'resource-types' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 6h16M4 12h16M4 18h7"/>
-                            </svg>
-                            <span>Типи ресурсів</span>
-                        </a>
-                        <a href="<?= $basePath ?>/resources/rates" class="nav-item <?= $activePage === 'resource-rates' ? 'active' : '' ?>">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
-                            </svg>
-                            <span>Норми списання</span>
-                        </a>
-                    </div>
-
-<?php if (in_array('admin', $_SESSION['nc_groups'] ?? [])): ?>
-<div class="nav-group">
-    <div class="nav-group-label">Система</div>
-    <a href="<?= $basePath ?>/settings/simple" class="nav-item <?= $activePage === 'settings-simple' ? 'active' : '' ?>">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
-        </svg>
-        <span>Заправка</span>
-    </a>
-    <a href="<?= $basePath ?>/admin/backup" class="nav-item <?= $activePage === 'admin-backup' ? 'active' : '' ?>">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 11H5M5 5h14v14H5z"/>
-            <polygon points="12 8 15 12 9 12 12 8"/>
-            <path d="M12 12v4"/>
-        </svg>
-        <span>Backup DB</span>
-    </a>
-    <a href="<?= $basePath ?>/admin/restore" class="nav-item <?= $activePage === 'admin-restore' ? 'active' : '' ?>">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 11H5M5 5h14v14H5z"/>
-            <polygon points="12 12 9 16 15 16 12 12"/>
-            <path d="M12 12V8"/>
-        </svg>
-        <span>Restore DB</span>
-    </a>
-</div>
-<?php endif; ?>
-
+                    <?php
+                    $menuModel = new MenuModel($db);
+                    $menuItems = $menuModel->getUserMenu(NC_USER);
+                    
+                    foreach ($menuItems as $group):
+                        if (empty($group['items'])) continue;
+                    ?>
+                        <div class="nav-group">
+                            <div class="nav-group-label"><?= htmlspecialchars($group['label']) ?></div>
+                            <?php foreach ($group['items'] as $item): ?>
+                                <?php
+                                $url = $item['url'] ?? BASE_PATH . '/' . $item['controller'];
+                                
+                                if ($item['requires_date_range']) {
+                                    $params = [];
+                                    if (!empty($globalDateFrom)) $params['date_from'] = $globalDateFrom;
+                                    if (!empty($globalDateTo)) $params['date_to'] = $globalDateTo;
+                                    if (!empty($params)) {
+                                        $url .= '?' . http_build_query($params);
+                                    }
+                                }
+                                
+                                $active = ($activePage === $item['controller']) ? 'active' : '';
+                                ?>
+                                <a href="<?= htmlspecialchars($url) ?>" class="nav-item <?= $active ?>">
+                                    <?php if (!empty($item['icon_svg'])): ?>
+                                        <?= $item['icon_svg'] ?>
+                                    <?php else: ?>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                        </svg>
+                                    <?php endif; ?>
+                                    <span><?= htmlspecialchars($item['label']) ?></span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endforeach; ?>
                 </nav>
             </aside>
 
@@ -210,12 +147,12 @@
                     </div>
                 </div>
 
-<div class="dp-presets">
-    <a href="<?= $basePath ?>/settings/preset/current-month" class="dp-preset-btn">Поточний місяць</a>
-    <a href="<?= $basePath ?>/settings/preset/last-month" class="dp-preset-btn">Минулий місяць</a>
-    <a href="<?= $basePath ?>/settings/preset/today" class="dp-preset-btn">Сьогодні</a>
-    <a href="<?= $basePath ?>/settings/preset/current-year" class="dp-preset-btn">Поточний рік</a>
-</div>
+                <div class="dp-presets">
+                    <a href="<?= $basePath ?>/settings/preset/current-month" class="dp-preset-btn">Поточний місяць</a>
+                    <a href="<?= $basePath ?>/settings/preset/last-month" class="dp-preset-btn">Минулий місяць</a>
+                    <a href="<?= $basePath ?>/settings/preset/today" class="dp-preset-btn">Сьогодні</a>
+                    <a href="<?= $basePath ?>/settings/preset/current-year" class="dp-preset-btn">Поточний рік</a>
+                </div>
 
                 <button class="dp-btn" onclick="applyDateRange()">Застосувати</button>
             </div>

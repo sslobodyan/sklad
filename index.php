@@ -85,7 +85,7 @@ define('NC_DB_GROUP', $_SESSION['nc_db_group'] ?? 'default');
 
 // Автозавантаження класів
 spl_autoload_register(function ($class) {
-    $dirs = ['core', 'models', 'controllers', 'helpers'];
+    $dirs = ['core', 'models', 'controllers', 'controllers/traits', 'helpers'];
     foreach ($dirs as $dir) {
         $file = ROOT_PATH . '/' . $dir . '/' . $class . '.php';
         if (file_exists($file)) {
@@ -104,6 +104,10 @@ try {
 } catch (Exception $e) {
     die('Помилка підключення до бази даних: ' . $e->getMessage());
 }
+
+// Синхронізація поточного користувача
+$permManager = PermissionManager::getInstance($db);
+$permManager->syncCurrentUser();
 
 // =============================================
 // Визначення маршруту
@@ -223,6 +227,53 @@ if ($route === 'admin/backup') {
     $id = null;
 }
 
+// Маршрути для управління користувачами та правами
+if ($route === 'admin/users') {
+    $controllerName = 'AdminController';
+    $action = 'users';
+    $id = null;
+} elseif ($route === 'admin/users/edit') {
+    $controllerName = 'AdminController';
+    $action = 'userEdit';
+    $id = (int)($_GET['id'] ?? 0);
+} elseif ($route === 'admin/users/save') {
+    $controllerName = 'AdminController';
+    $action = 'userSave';
+    $id = null;
+} elseif ($route === 'admin/users/delete') {
+    $controllerName = 'AdminController';
+    $action = 'userDelete';
+    $id = (int)($_GET['id'] ?? 0);
+} elseif ($route === 'admin/menu') {
+    $controllerName = 'AdminController';
+    $action = 'menu';
+    $id = null;
+} elseif ($route === 'admin/menu/save') {
+    $controllerName = 'AdminController';
+    $action = 'menuSave';
+    $id = null;
+} elseif ($route === 'admin/menu/reorder') {
+    $controllerName = 'AdminController';
+    $action = 'menuReorder';
+    $id = null;
+} elseif ($route === 'admin/permissions') {
+    $controllerName = 'AdminController';
+    $action = 'permissions';
+    $id = (int)($_GET['id'] ?? 0);
+} elseif ($route === 'admin/permissions/save') {
+    $controllerName = 'AdminController';
+    $action = 'permissionsSave';
+    $id = null;
+} elseif ($route === 'settings/controller-labels') {
+    $controllerName = 'SettingsController';
+    $action = 'controllerLabels';
+    $id = null;
+} elseif ($route === 'settings/controller-labels/save') {
+    $controllerName = 'SettingsController';
+    $action = 'saveControllerLabels';
+    $id = null;
+}
+
 // =============================================
 // Перевірка існування контролера
 // =============================================
@@ -231,6 +282,25 @@ if (!file_exists($controllerFile)) {
     http_response_code(404);
     require ROOT_PATH . '/views/errors/404.php';
     exit;
+}
+
+// Перевірка доступу
+$actionMethod = $action;
+if ($id !== null) {
+    $actionMethod = $action;
+}
+
+if (!PermissionManager::getInstance($db)->canAccess(NC_USER, $controllerName, $actionMethod)) {
+    if (PermissionManager::isAjax()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
+        exit;
+    } else {
+        $_SESSION['flash_messages'] = $_SESSION['flash_messages'] ?? [];
+        $_SESSION['flash_messages'][] = ['type' => 'error', 'message' => 'Доступ заборонено'];
+        header('Location: ' . BASE_PATH . '/dashboard');
+        exit;
+    }
 }
 
 // =============================================

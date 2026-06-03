@@ -10,6 +10,7 @@ class ResourcesController extends Controller
 {
     use ResourceValidationTrait;
     use ResourceContextTrait;
+    use AuthorizeTrait;
 
     private ResourceModel $model;
     private MovementModel $movementModel;
@@ -23,6 +24,9 @@ class ResourcesController extends Controller
 
     public function index(): void
     {
+        
+        $this->checkAccess('index');
+
         $highlightId = $this->get('highlight');
         
         $filters = [
@@ -69,6 +73,9 @@ class ResourcesController extends Controller
 
     public function add(): void
     {
+        
+        $this->checkAccess('add');
+
         if (!$this->isPost()) {
             $this->redirect('resources');
             return;
@@ -125,6 +132,9 @@ class ResourcesController extends Controller
 
     public function editlog($id = null): void
     {
+        
+        $this->checkAccess('editlog');
+
         if (!$this->isPost() || !$id) {
             $this->redirect('resources');
             return;
@@ -189,6 +199,9 @@ class ResourcesController extends Controller
 
     public function deletelog($id): void
     {
+        
+        $this->checkAccess('deletelog');
+
         $config = new ConfigModel($this->db);
         $log = $this->db->query("SELECT * FROM resource_logs WHERE id = ?", [(int)$id])->fetch();
 
@@ -234,6 +247,9 @@ class ResourcesController extends Controller
 
 public function getlog($id = null): void
 {
+        
+    $this->checkAccess('getlog');
+
     if (!$id) {
         $this->json(['success' => false, 'error' => 'ID не вказано']);
         return;
@@ -256,6 +272,9 @@ public function getlog($id = null): void
 
 public function getrate($id = null): void
 {
+        
+    $this->checkAccess('getrate');
+
     if (!$id) {
         $this->json(['success' => false, 'error' => 'ID не вказано']);
         return;
@@ -286,6 +305,9 @@ public function getrate($id = null): void
 
 public function gettype($id = null): void
 {
+        
+    $this->checkAccess('gettype');
+
     if (!$id) {
         $this->json(['success' => false, 'error' => 'ID не вказано']);
         return;

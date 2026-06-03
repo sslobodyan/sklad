@@ -1,22 +1,19 @@
 <?php
-/**
- * Контролер налаштувань (глобальний діапазон дат)
- */
 
 class SettingsController extends Controller
 {
-    /**
-     * Перевірка чи користувач є адміністратором
-     */
+    use AuthorizeTrait;
+
     private function isAdmin(): bool
     {
-        // Перевіряємо групи Nextcloud
         $ncGroups = $_SESSION['nc_groups'] ?? [];
         return in_array('admin', $ncGroups, true);
     }
 
     public function dates(): void
     {
+        $this->checkAccess('dates');
+        
         if ($this->isPost()) {
             $dateFrom = $this->post('date_from');
             $dateTo = $this->post('date_to');
@@ -35,6 +32,8 @@ class SettingsController extends Controller
 
     public function preset($type): void
     {
+        $this->checkAccess('preset');
+        
         $dateFrom = '';
         $dateTo = '';
         
@@ -105,6 +104,8 @@ class SettingsController extends Controller
 
     public function closeperiod(): void
     {
+        $this->checkAccess('closeperiod');
+        
         if ($this->isPost()) {
             $config = new ConfigModel($this->db);
             $date = $this->post('closed_date');
@@ -122,13 +123,10 @@ class SettingsController extends Controller
         exit;
     }
 
-    /**
-     * Сторінка налаштувань "тупого складу" (заправка)
-     * Доступна тільки адміністраторам
-     */
     public function simple(): void
     {
-        // Перевірка прав доступу
+        $this->checkAccess('simple');
+        
         if (!$this->isAdmin()) {
             $this->flash('error', 'Доступ заборонено. Тільки для адміністраторів.');
             $this->redirect('/');
@@ -157,12 +155,10 @@ class SettingsController extends Controller
         ]);
     }
 
-    /**
-     * Зберегти налаштування "тупого складу"
-     */
     public function simplesave(): void
     {
-        // Перевірка прав доступу
+        $this->checkAccess('simplesave');
+        
         if (!$this->isAdmin()) {
             $this->jsonResponse(['success' => false, 'error' => 'Доступ заборонено']);
             return;
@@ -177,14 +173,12 @@ class SettingsController extends Controller
         
         $warehouseId = (int)$this->post('simple_warehouse') ?: null;
         
-        // Парсимо comma-separated рядок у масив
         $materialIdsRaw = $this->post('simple_materials');
         $materialIds = [];
         if (!empty($materialIdsRaw)) {
             $materialIds = array_map('intval', explode(',', $materialIdsRaw));
         }
         
-        // Парсимо comma-separated рядок у масив для складів
         $warehouseIdsRaw = $this->post('simple_warehouses');
         $warehouseIds = [];
         if (!empty($warehouseIdsRaw)) {
@@ -199,11 +193,10 @@ class SettingsController extends Controller
         $this->redirect('/settings/simple');
     }
 
-    /**
-     * Отримати список складів та матеріалів (AJAX)
-     */
     public function simpledata(): void
     {
+        $this->checkAccess('simpledata');
+        
         if (!$this->isAdmin()) {
             $this->jsonResponse(['success' => false, 'error' => 'Доступ заборонено']);
             return;
@@ -220,6 +213,100 @@ class SettingsController extends Controller
             'currentWarehouse' => $config->getSimpleWarehouse(),
             'currentMaterials' => $config->getSimpleMaterials(),
         ]);
+    }
+
+    /**
+     * Сторінка налаштування назв контролерів
+     */
+    public function controllerLabels(): void
+    {
+        $this->checkAccess('controllerLabels');
+        
+        if (!$this->isAdmin()) {
+            $this->flash('error', 'Доступ заборонено');
+            $this->redirect('/');
+            return;
+        }
+        
+        $config = new ConfigModel($this->db);
+        $currentLabels = $config->getControllerLabels();
+        
+        $controllers = $this->scanControllers();
+        
+        $this->render('settings/controller_labels', [
+            'title' => 'Назви контролерів',
+            'controllers' => $controllers,
+            'currentLabels' => $currentLabels,
+            'activePage' => 'settings-controller-labels',
+        ]);
+    }
+
+    /**
+     * Зберегти налаштування назв контролерів
+     */
+    public function saveControllerLabels(): void
+    {
+        $this->checkAccess('saveControllerLabels');
+        
+        if (!$this->isAdmin()) {
+            $this->jsonResponse(['success' => false, 'error' => 'Доступ заборонено']);
+            return;
+        }
+        
+        if (!$this->isPost()) {
+            $this->redirect('settings/controller-labels');
+            return;
+        }
+        
+        $labels = [];
+        $controllers = $this->scanControllers();
+        
+        foreach ($controllers as $key => $originalName) {
+            $label = trim($this->post('label_' . $key, ''));
+            if (!empty($label)) {
+                $labels[$key] = $label;
+            }
+        }
+        
+        $config = new ConfigModel($this->db);
+        $config->setControllerLabels($labels);
+        
+        $this->flash('success', 'Назви контролерів збережено');
+        $this->redirect('settings/controller-labels');
+    }
+
+    /**
+     * Скануємо директорію контролерів
+     */
+    private function scanControllers(): array
+    {
+        $controllersDir = ROOT_PATH . '/controllers/';
+        $files = glob($controllersDir . '*Controller.php');
+        
+        $controllers = [];
+        $excludePatterns = ['Export', 'Import', 'Helper', 'Report', 'Rates', 'SimpleDataHelper'];
+        
+        foreach ($files as $file) {
+            $basename = basename($file, 'Controller.php');
+            
+            $excluded = false;
+            foreach ($excludePatterns as $pattern) {
+                if (strpos($basename, $pattern) !== false) {
+                    $excluded = true;
+                    break;
+                }
+            }
+            
+            if ($excluded || in_array($basename, ['Model', 'Controller', 'Database'])) {
+                continue;
+            }
+            
+            $key = strtolower($basename);
+            $controllers[$key] = $basename;
+        }
+        
+        ksort($controllers);
+        return $controllers;
     }
 
     private function jsonResponse(array $data): void

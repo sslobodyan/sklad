@@ -127,4 +127,29 @@ class ConfigModel extends Model
             $this->setValue('simple_warehouses', json_encode(array_values(array_map('intval', $warehouseIds))));
         }
     }
+
+/**
+ * Отримати налаштування назв контролерів
+ */
+public function getControllerLabels(): array
+{
+    $value = $this->getValue('controller_labels');
+    if (!$value) {
+        return [];
+    }
+    
+    $decoded = json_decode($value, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+/**
+ * Встановити налаштування назв контролерів
+ */
+public function setControllerLabels(array $labels): void
+{
+    $filtered = array_filter($labels, function($v) {
+        return !empty(trim($v));
+    });
+    $this->setValue('controller_labels', json_encode($filtered, JSON_UNESCAPED_UNICODE));
+}
 }
