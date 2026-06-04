@@ -165,8 +165,12 @@ if (!file_exists($controllerFile)) {
 // =============================================
 // Перевірка доступу
 // =============================================
-// Використовуємо повний маршрут як назву контролера для перевірки
-$controllerForAccess = $route;
+// Беремо тільки перший сегмент URL як назву контролера для перевірки
+$controllerForAccess = $parts[0] ?? '';
+
+if (empty($controllerForAccess)) {
+    $controllerForAccess = 'dashboard';
+}
 
 if (!PermissionManager::getInstance($db)->canAccess(NC_USER, $controllerForAccess, $action)) {
     if (PermissionManager::isAjax()) {
