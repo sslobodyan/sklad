@@ -22,34 +22,30 @@ class ResourceRatesModel extends Model
         )->fetchAll();
     }
 
-public function saveRate(int $warehouseId, int $resourceTypeId, int $materialId, float $rate, ?int $sourceWarehouseId, bool $spreadByDay = false): void
-{
-    $this->setCurrentUser();
-    
-    // Перевіряємо чи існує запис
-    $exists = $this->db->query(
-        "SELECT id FROM resource_rates WHERE warehouse_id = ? AND resource_type_id = ? AND material_id = ?",
-        [$warehouseId, $resourceTypeId, $materialId]
-    )->fetch();
-    
-    if ($exists) {
-        // Оновлення
-        $this->db->query(
-            "UPDATE resource_rates 
-             SET rate = ?, source_warehouse_id = ?, spread_by_day = ?, author = ?, updated_at = NOW()
-             WHERE warehouse_id = ? AND resource_type_id = ? AND material_id = ?",
-            [$rate, $sourceWarehouseId ?: null, $spreadByDay ? 1 : 0, $this->authorStamp(), $warehouseId, $resourceTypeId, $materialId]
-        );
-    } else {
-        // Вставка нового запису
-        $this->db->query(
-            "INSERT INTO resource_rates (warehouse_id, resource_type_id, material_id, rate, source_warehouse_id, spread_by_day, author, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
-            [$warehouseId, $resourceTypeId, $materialId, $rate, $sourceWarehouseId ?: null, $spreadByDay ? 1 : 0, $this->authorStamp()]
-        );
+    public function saveRate(int $warehouseId, int $resourceTypeId, int $materialId, float $rate, ?int $sourceWarehouseId, bool $spreadByDay = false): void
+    {
+        $this->setCurrentUser();
+        
+        $exists = $this->db->query(
+            "SELECT id FROM resource_rates WHERE warehouse_id = ? AND resource_type_id = ? AND material_id = ?",
+            [$warehouseId, $resourceTypeId, $materialId]
+        )->fetch();
+        
+        if ($exists) {
+            $this->db->query(
+                "UPDATE resource_rates 
+                 SET rate = ?, source_warehouse_id = ?, spread_by_day = ?, author = ?, updated_at = NOW()
+                 WHERE warehouse_id = ? AND resource_type_id = ? AND material_id = ?",
+                [$rate, $sourceWarehouseId ?: null, $spreadByDay ? 1 : 0, $this->authorStamp(), $warehouseId, $resourceTypeId, $materialId]
+            );
+        } else {
+            $this->db->query(
+                "INSERT INTO resource_rates (warehouse_id, resource_type_id, material_id, rate, source_warehouse_id, spread_by_day, author, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                [$warehouseId, $resourceTypeId, $materialId, $rate, $sourceWarehouseId ?: null, $spreadByDay ? 1 : 0, $this->authorStamp()]
+            );
+        }
     }
-}
-
 
     public function deleteRate(int $id): void
     {
@@ -86,38 +82,43 @@ public function saveRate(int $warehouseId, int $resourceTypeId, int $materialId,
         );
     }
 
-    public function getWarehousesWithResources(): array
+    public function getWarehousesWithResources(?array $allowedWarehouses = null): array
     {
-        return $this->db->query(
-            "SELECT DISTINCT w.id, w.name,
-                    GROUP_CONCAT(rt.name ORDER BY rt.name SEPARATOR ', ') AS resource_names
-             FROM warehouse_resources wr
-             JOIN warehouses w ON wr.warehouse_id = w.id
-             JOIN resource_types rt ON wr.resource_type_id = rt.id
-             GROUP BY w.id, w.name
-             ORDER BY w.name"
-        )->fetchAll();
+        $sql = "SELECT DISTINCT w.id, w.name,
+                       GROUP_CONCAT(rt.name ORDER BY rt.name SEPARATOR ', ') AS resource_names
+                FROM warehouse_resources wr
+                JOIN warehouses w ON wr.warehouse_id = w.id
+                JOIN resource_types rt ON wr.resource_type_id = rt.id";
+        
+        if ($allowedWarehouses !== null && !empty($allowedWarehouses)) {
+            $placeholders = implode(',', array_fill(0, count($allowedWarehouses), '?'));
+            $sql .= " WHERE w.id IN ($placeholders)";
+            $params = $allowedWarehouses;
+        } else {
+            $params = [];
+        }
+        
+        $sql .= " GROUP BY w.id, w.name ORDER BY w.name";
+        
+        return $this->db->query($sql, $params)->fetchAll();
     }
 
     /**
      * Отримати склади, що мають норми для вказаного типу ресурсу
      */
-
-public function getWarehousesByResourceType(int $resourceTypeId): array
-{
-    
-    $result = $this->db->query(
-        "SELECT DISTINCT w.id, w.name
-         FROM resource_rates rr
-         JOIN warehouses w ON rr.warehouse_id = w.id
-         WHERE rr.resource_type_id = ?
-         ORDER BY w.name",
-        [$resourceTypeId]
-    )->fetchAll();
-    
-    return $result;
-}
-
+    public function getWarehousesByResourceType(int $resourceTypeId): array
+    {
+        $result = $this->db->query(
+            "SELECT DISTINCT w.id, w.name
+             FROM resource_rates rr
+             JOIN warehouses w ON rr.warehouse_id = w.id
+             WHERE rr.resource_type_id = ?
+             ORDER BY w.name",
+            [$resourceTypeId]
+        )->fetchAll();
+        
+        return $result;
+    }
 
     /**
      * Отримати матеріали, що використовуються в нормах для вказаного типу ресурсу
@@ -133,5 +134,4 @@ public function getWarehousesByResourceType(int $resourceTypeId): array
             [$resourceTypeId]
         )->fetchAll();
     }
-
 }

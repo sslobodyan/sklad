@@ -22,61 +22,7 @@ class ResourcesController extends Controller
         $this->movementModel = new MovementModel($db);
     }
 
-public function index(): void
-{
-    $this->checkAccess('index');
-    
-    $highlightId = $this->get('highlight');
-    
-    $filters = [
-        'warehouse_id' => $this->get('warehouse_id'),
-        'resource_type_id' => $this->get('resource_type_id'),
-        'date_from' => $this->get('date_from'),
-        'date_to' => $this->get('date_to'),
-    ];
-
-    if ($highlightId) {
-        $filters = ['warehouse_id' => '', 'resource_type_id' => '', 'date_from' => '', 'date_to' => ''];
-    }
-
-    $allowedWarehouses = $this->getPermManager()->getAllowedWarehouses(NC_USER);
-    $logs = $this->model->getLogs($filters, $allowedWarehouses);
-    
-    // Фільтрація складів та типів для випадаючих списків
-    $whWithRes = $this->model->getWarehousesWithResources($allowedWarehouses);
-    $whWithRes = $this->filterWarehouses($whWithRes);
-    
-    $types = $this->model->getTypes();
-    $types = $this->filterResourceTypes($types);
-
-    $prevDates = [];
-    foreach ($logs as $l) {
-        $prev = $this->db->query(
-            "SELECT log_date FROM resource_logs 
-             WHERE warehouse_id = ? AND resource_type_id = ? AND id < ? 
-             ORDER BY log_date DESC, id DESC LIMIT 1",
-            [$l['warehouse_id'], $l['resource_type_id'], $l['id']]
-        )->fetch();
-        if ($prev) {
-            $d = new \DateTime($prev['log_date']);
-            $d->modify('+1 day');
-            $prevDates[$l['id']] = $d->format('Y-m-d');
-        }
-    }
-
-    $this->render('resources/index', [
-        'title' => 'Витрата ресурсів',
-        'logs' => $logs,
-        'warehousesWithResources' => $whWithRes,
-        'types' => $types,
-        'filters' => $filters,
-        'highlightId' => $highlightId,
-        'prevDates' => $prevDates,
-        'activePage' => 'resources',
-    ]);
-}
-
-    public function index_old(): void
+    public function index(): void
     {
         
         $this->checkAccess('index');

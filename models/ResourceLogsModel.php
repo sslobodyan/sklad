@@ -129,7 +129,7 @@ class ResourceLogsModel extends Model
         return $r ?: null;
     }
 
-    public function getLogs(array $filters = []): array
+    public function getLogs(array $filters = [], ?array $allowedWarehouses = null): array
     {
         $where = [];
         $params = [];
@@ -149,6 +149,13 @@ class ResourceLogsModel extends Model
         if (!empty($filters['date_to'])) {
             $where[] = "rl.log_date <= ?";
             $params[] = $filters['date_to'];
+        }
+        
+        // Фільтрація по дозволених складах
+        if ($allowedWarehouses !== null && !empty($allowedWarehouses)) {
+            $placeholders = implode(',', array_fill(0, count($allowedWarehouses), '?'));
+            $where[] = "rl.warehouse_id IN ($placeholders)";
+            $params = array_merge($params, $allowedWarehouses);
         }
 
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
