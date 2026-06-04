@@ -4,14 +4,15 @@
         <p class="page-subtitle"><?= isset($user) && $user ? htmlspecialchars($user['nc_user']) : 'Додавання нового користувача' ?></p>
     </div>
     <div class="header-buttons">
-        <a href="<?= $basePath ?>/admin/users" class="btn btn-secondary">Назад</a>
+        <a href="<?= $basePath ?>/adminUsers" class="btn btn-secondary">Назад</a>
     </div>
 </div>
 
 <div class="card card-stretch">
     <div class="table-scroll" style="flex: 1; overflow: auto; min-height: 0;">
-        <form method="post" action="<?= $basePath ?>/admin/users/save" id="userForm">
+        <form method="post" action="<?= $basePath ?>/adminUsers/save" id="userForm">
             <?php if (isset($user) && $user): ?>
+            <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
             <input type="hidden" name="nc_user" value="<?= htmlspecialchars($user['nc_user']) ?>">
             <?php endif; ?>
             
@@ -173,7 +174,7 @@
             
             <div class="card-footer-info" style="position: sticky; bottom: 0; background: #fafbfc; margin-top: 10px;">
                 <button type="submit" class="btn btn-primary">Зберегти</button>
-                <a href="<?= $basePath ?>/admin/users" class="btn btn-secondary">Скасувати</a>
+                <a href="<?= $basePath ?>/adminUsers" class="btn btn-secondary">Скасувати</a>
             </div>
         </form>
     </div>

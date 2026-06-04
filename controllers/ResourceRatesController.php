@@ -1,11 +1,9 @@
 <?php
-/**
- * Контролер норм списання ресурсів
- */
+
 class ResourceRatesController extends Controller
 {
     use AuthorizeTrait;
-
+    
     private ResourceModel $model;
     private WarehouseModel $warehouseModel;
     private MaterialModel $materialModel;
@@ -18,10 +16,10 @@ class ResourceRatesController extends Controller
         $this->materialModel = new MaterialModel($db);
     }
 
-    public function rates(): void
+    public function index(): void
     {
-        $this->checkAccess('rates');
-
+        $this->checkAccess('index');
+        
         $warehouseId = (int)$this->get('warehouse_id', 0);
         $resourceTypeId = (int)$this->get('resource_type_id', 0);
 
@@ -61,9 +59,9 @@ class ResourceRatesController extends Controller
     public function addresource(): void
     {
         $this->checkAccess('addresource');
-
+        
         if (!$this->isPost()) {
-            $this->redirect('resources/rates');
+            $this->redirect('resource-rates');
             return;
         }
         
@@ -74,15 +72,15 @@ class ResourceRatesController extends Controller
             $this->model->addWarehouseResource($whId, $rtId);
             $this->flash('success', 'Ресурс прив\'язано до складу');
         }
-        $this->redirect('resources/rates?warehouse_id=' . $whId);
+        $this->redirect('resource-rates?warehouse_id=' . $whId);
     }
 
     public function removeresource(): void
     {
         $this->checkAccess('removeresource');
-
+        
         if (!$this->isPost()) {
-            $this->redirect('resources/rates');
+            $this->redirect('resource-rates');
             return;
         }
         
@@ -93,15 +91,15 @@ class ResourceRatesController extends Controller
             $this->model->removeWarehouseResource($whId, $rtId);
             $this->flash('success', 'Ресурс видалено зі складу');
         }
-        $this->redirect('resources/rates?warehouse_id=' . $whId);
+        $this->redirect('resource-rates?warehouse_id=' . $whId);
     }
 
     public function saverate(): void
     {
         $this->checkAccess('saverate');
-
+        
         if (!$this->isPost()) {
-            $this->redirect('resources/rates');
+            $this->redirect('resource-rates');
             return;
         }
         
@@ -123,10 +121,10 @@ class ResourceRatesController extends Controller
     public function deleterate($id): void
     {
         $this->checkAccess('deleterate');
-
+        
         $this->model->deleteRate((int)$id);
         $this->flash('success', 'Норму видалено');
-        $referer = $_SERVER['HTTP_REFERER'] ?? BASE_PATH . '/resources/rates';
+        $referer = $_SERVER['HTTP_REFERER'] ?? BASE_PATH . '/resource-rates';
         header('Location: ' . $referer);
         exit;
     }

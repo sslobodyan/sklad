@@ -161,7 +161,7 @@ function openRateModal(id, materialId, rate, sourceWhId, spreadByDay) {
     });
 
     var content =
-        '<form action="' + basePath + '/resources/saverate" method="POST" onsubmit="submitForm(this); return false;">' +
+        '<form action="' + basePath + '/resourceRates/saverate" method="POST" onsubmit="submitForm(this); return false;">' +
             '<input type="hidden" name="warehouse_id" value="' + rateWarehouseId + '">' +
             '<input type="hidden" name="resource_type_id" value="' + rateResourceTypeId + '">' +
             '<div class="form-group">' +
@@ -193,7 +193,7 @@ function openRateModal(id, materialId, rate, sourceWhId, spreadByDay) {
     openModal(title, content);
 
     if (isEdit) {
-        fetch(basePath + '/resources/getrate/' + id)
+        fetch(basePath + '/resourceRates/getrate/' + id)
             .then(function(r) { return r.json(); })
             .then(function(result) {
                 if (result.success && result.data) {

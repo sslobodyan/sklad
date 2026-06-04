@@ -4,9 +4,6 @@ class UserRoleModel extends Model
 {
     protected string $table = 'user_roles';
 
-    /**
-     * Отримати користувача з роллю та обмеженнями
-     */
     public function getUser(string $ncUser): ?array
     {
         $result = $this->db->query(
@@ -18,7 +15,6 @@ class UserRoleModel extends Model
             return null;
         }
         
-        // Розкодовуємо JSON поля
         $result['allowed_warehouses'] = $this->decodeJson($result['allowed_warehouses']);
         $result['allowed_materials'] = $this->decodeJson($result['allowed_materials']);
         $result['allowed_resource_types'] = $this->decodeJson($result['allowed_resource_types']);
@@ -26,9 +22,24 @@ class UserRoleModel extends Model
         return $result;
     }
 
-    /**
-     * Отримати всіх користувачів з ролями
-     */
+    public function getUserById(int $id): ?array
+    {
+        $result = $this->db->query(
+            "SELECT * FROM user_roles WHERE id = ?",
+            [$id]
+        )->fetch();
+        
+        if (!$result) {
+            return null;
+        }
+        
+        $result['allowed_warehouses'] = $this->decodeJson($result['allowed_warehouses']);
+        $result['allowed_materials'] = $this->decodeJson($result['allowed_materials']);
+        $result['allowed_resource_types'] = $this->decodeJson($result['allowed_resource_types']);
+        
+        return $result;
+    }
+
     public function getAllUsers(): array
     {
         $users = $this->db->query(
@@ -44,9 +55,6 @@ class UserRoleModel extends Model
         return $users;
     }
 
-    /**
-     * Створити або оновити користувача
-     */
     public function createOrUpdate(string $ncUser, array $data): bool
     {
         $allowedWarehouses = $this->encodeJson($data['allowed_warehouses'] ?? null);
@@ -61,7 +69,6 @@ class UserRoleModel extends Model
         $existing = $this->getUser($ncUser);
         
         if ($existing) {
-            // Оновлення
             $this->db->query(
                 "UPDATE user_roles 
                  SET role = ?, 
@@ -87,7 +94,6 @@ class UserRoleModel extends Model
                 ]
             );
         } else {
-            // Вставка
             $this->db->query(
                 "INSERT INTO user_roles (nc_user, role, allowed_warehouses, allowed_materials, allowed_resource_types, can_edit_rates, can_export, can_import, author) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -108,9 +114,6 @@ class UserRoleModel extends Model
         return true;
     }
 
-    /**
-     * Видалити користувача
-     */
     public function deleteUser(string $ncUser): bool
     {
         $this->db->query("DELETE FROM user_roles WHERE nc_user = ?", [$ncUser]);
@@ -118,9 +121,6 @@ class UserRoleModel extends Model
         return true;
     }
 
-    /**
-     * Автоматично додати поточного користувача при першому вході
-     */
     public function syncFromSession(): void
     {
         $ncUser = $_SESSION['nc_user'] ?? null;
@@ -130,7 +130,6 @@ class UserRoleModel extends Model
         
         $existing = $this->getUser($ncUser);
         if (!$existing) {
-            // Новий користувач - за замовчуванням viewer
             $this->createOrUpdate($ncUser, [
                 'role' => 'viewer',
                 'allowed_warehouses' => null,
@@ -143,9 +142,6 @@ class UserRoleModel extends Model
         }
     }
 
-    /**
-     * Отримати користувачів за роллю
-     */
     public function getUsersByRole(string $role): array
     {
         return $this->db->query(
@@ -154,9 +150,6 @@ class UserRoleModel extends Model
         )->fetchAll();
     }
 
-    /**
-     * Отримати користувачів, які мають доступ до складу
-     */
     public function getUsersWithWarehouseAccess(int $warehouseId): array
     {
         $allUsers = $this->getAllUsers();
@@ -172,9 +165,6 @@ class UserRoleModel extends Model
         return $result;
     }
 
-    /**
-     * Перевірити чи користувач має доступ до складу
-     */
     public function hasWarehouseAccess(string $ncUser, int $warehouseId): bool
     {
         $user = $this->getUser($ncUser);
@@ -186,9 +176,6 @@ class UserRoleModel extends Model
         return ($allowed === null || in_array($warehouseId, $allowed));
     }
 
-    /**
-     * Перевірити чи користувач має доступ до матеріалу
-     */
     public function hasMaterialAccess(string $ncUser, int $materialId): bool
     {
         $user = $this->getUser($ncUser);
@@ -200,9 +187,6 @@ class UserRoleModel extends Model
         return ($allowed === null || in_array($materialId, $allowed));
     }
 
-    /**
-     * Перевірити чи користувач має доступ до типу ресурсу
-     */
     public function hasResourceTypeAccess(string $ncUser, int $typeId): bool
     {
         $user = $this->getUser($ncUser);
@@ -214,9 +198,6 @@ class UserRoleModel extends Model
         return ($allowed === null || in_array($typeId, $allowed));
     }
 
-    /**
-     * Фільтрувати масив складів за правами користувача
-     */
     public function filterWarehouses(string $ncUser, array $warehouses): array
     {
         $user = $this->getUser($ncUser);
@@ -235,9 +216,6 @@ class UserRoleModel extends Model
         });
     }
 
-    /**
-     * Фільтрувати масив матеріалів за правами користувача
-     */
     public function filterMaterials(string $ncUser, array $materials): array
     {
         $user = $this->getUser($ncUser);
@@ -256,9 +234,6 @@ class UserRoleModel extends Model
         });
     }
 
-    /**
-     * Декодування JSON
-     */
     private function decodeJson($value): ?array
     {
         if (empty($value)) {
@@ -269,9 +244,6 @@ class UserRoleModel extends Model
         return is_array($decoded) ? $decoded : null;
     }
 
-    /**
-     * Кодування в JSON
-     */
     private function encodeJson($value): ?string
     {
         if (empty($value)) {

@@ -215,65 +215,6 @@ class SettingsController extends Controller
         ]);
     }
 
-    /**
-     * Сторінка налаштування назв контролерів
-     */
-    public function controllerLabels(): void
-    {
-        $this->checkAccess('controllerLabels');
-        
-        if (!$this->isAdmin()) {
-            $this->flash('error', 'Доступ заборонено');
-            $this->redirect('/');
-            return;
-        }
-        
-        $config = new ConfigModel($this->db);
-        $currentLabels = $config->getControllerLabels();
-        
-        $controllers = $this->scanControllers();
-        
-        $this->render('settings/controller_labels', [
-            'title' => 'Назви контролерів',
-            'controllers' => $controllers,
-            'currentLabels' => $currentLabels,
-            'activePage' => 'settings-controller-labels',
-        ]);
-    }
-
-    /**
-     * Зберегти налаштування назв контролерів
-     */
-    public function saveControllerLabels(): void
-    {
-        $this->checkAccess('saveControllerLabels');
-        
-        if (!$this->isAdmin()) {
-            $this->jsonResponse(['success' => false, 'error' => 'Доступ заборонено']);
-            return;
-        }
-        
-        if (!$this->isPost()) {
-            $this->redirect('settings/controller-labels');
-            return;
-        }
-        
-        $labels = [];
-        $controllers = $this->scanControllers();
-        
-        foreach ($controllers as $key => $originalName) {
-            $label = trim($this->post('label_' . $key, ''));
-            if (!empty($label)) {
-                $labels[$key] = $label;
-            }
-        }
-        
-        $config = new ConfigModel($this->db);
-        $config->setControllerLabels($labels);
-        
-        $this->flash('success', 'Назви контролерів збережено');
-        $this->redirect('settings/controller-labels');
-    }
 
     /**
      * Скануємо директорію контролерів

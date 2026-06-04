@@ -26,7 +26,7 @@ class ReportsController extends Controller
      */
     public function warehouse(): void
     {
-        $this->checkAccess('warehouse');
+//        $this->checkAccess('warehouse');
 
         $warehouseId = (int)$this->get('warehouse_id', 0);
         $dateFrom = $this->get('date_from') ?: SettingsController::getDateFrom();
@@ -59,7 +59,7 @@ class ReportsController extends Controller
      */
     public function material(): void
     {
-        $this->checkAccess('material');
+//        $this->checkAccess('material');
 
         $materialId = (int)$this->get('material_id', 0);
         $dateFrom = $this->get('date_from') ?: SettingsController::getDateFrom();
@@ -112,7 +112,7 @@ class ReportsController extends Controller
      */
     public function resource(): void
     {
-        $this->checkAccess('resource');
+//        $this->checkAccess('resource');
 
         $dateFrom = $this->get('date_from') ?: SettingsController::getDateFrom();
         $dateTo   = $this->get('date_to')   ?: SettingsController::getDateTo();

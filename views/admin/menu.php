@@ -15,7 +15,7 @@
     </div>
     <?php else: ?>
     <div class="table-scroll">
-        <form method="post" action="<?= $basePath ?>/admin/menu/save">
+        <form method="post" action="<?= $basePath ?>/adminMenu/save">
             <table class="data-table">
                 <thead>
                     <tr>

@@ -4,7 +4,7 @@
         <p class="page-subtitle">Управління ролями та обмеженнями</p>
     </div>
     <div class="header-buttons">
-        <a href="<?= $basePath ?>/admin/users/edit" class="btn btn-primary">
+        <a href="<?= $basePath ?>/adminUsers/edit" class="btn btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"/>
                 <line x1="5" y1="12" x2="19" y2="12"/>
@@ -22,7 +22,7 @@
             <circle cx="12" cy="7" r="4"/>
         </svg>
         <p>Користувачів поки немає</p>
-        <a href="<?= $basePath ?>/admin/users/edit" class="btn btn-primary btn-sm">Додати першого користувача</a>
+        <a href="<?= $basePath ?>/adminUsers/edit" class="btn btn-primary btn-sm">Додати першого користувача</a>
     </div>
     <?php else: ?>
     <div class="table-scroll">
@@ -63,18 +63,18 @@
                     <td class="text-center"><?= $user['can_import'] ? '✓' : '—' ?></td>
                     <td class="text-center"><?= $user['can_edit_rates'] ? '✓' : '—' ?></td>
                     <td class="text-right actions no-print-col">
-                        <a href="<?= $basePath ?>/admin/permissions?user_id=<?= $user['id'] ?>" class="btn-icon" title="Права доступу">
+                        <a href="<?= $basePath ?>/adminPermissions/view/<?= $user['id'] ?>" class="btn-icon" title="Права доступу">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 15v2m-6 4h12a2 2 0 002-2v-8a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2zm10-10V6a4 4 0 00-8 0v4h8z"/>
                             </svg>
                         </a>
-                        <a href="<?= $basePath ?>/admin/users/edit?id=<?= $user['id'] ?>" class="btn-icon" title="Редагувати">
+                        <a href="<?= $basePath ?>/adminUsers/edit/<?= $user['id'] ?>" class="btn-icon" title="Редагувати">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                             </svg>
                         </a>
-                        <a href="<?= $basePath ?>/admin/users/delete?id=<?= $user['id'] ?>" class="btn-icon btn-icon-danger" title="Видалити" onclick="return confirm('Видалити користувача?')">
+                        <a href="<?= $basePath ?>/adminUsers/delete/<?= $user['id'] ?>" class="btn-icon btn-icon-danger" title="Видалити" onclick="return confirm('Видалити користувача?')">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
                             </svg>

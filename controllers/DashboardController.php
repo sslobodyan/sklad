@@ -5,8 +5,13 @@
 
 class DashboardController extends Controller
 {
+    use AuthorizeTrait;
+
     public function index(): void
     {
+
+        $this->checkAccess('index');
+
         // Отримуємо дані користувача з сесії
         $username = $_SESSION['nc_user'] ?? '';
         $displayName = $_SESSION['nc_display_name'] ?? '';

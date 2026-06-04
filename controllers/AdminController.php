@@ -19,9 +19,6 @@ class AdminController extends Controller
         }
     }
 
-    /**
-     * Сторінка резервного копіювання
-     */
     public function backup(): void
     {
         $this->checkAdmin();
@@ -33,9 +30,6 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Сторінка відновлення
-     */
     public function restore(): void
     {
         $this->checkAdmin();
@@ -47,9 +41,6 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Виконати бекап
-     */
     public function doBackup(): void
     {
         $this->checkAdmin();
@@ -105,9 +96,6 @@ class AdminController extends Controller
         exit;
     }
 
-    /**
-     * Виконати відновлення
-     */
     public function doRestore(): void
     {
         $this->checkAdmin();
@@ -183,110 +171,103 @@ class AdminController extends Controller
         $this->redirect('admin/restore');
     }
 
-    /**
-     * Сторінка управління користувачами
-     */
-public function users(): void
-{
-    $this->checkAdmin();
-    $this->checkAccess('users');
-    
-    $userRoleModel = new UserRoleModel($this->db);
-    $users = $userRoleModel->getAllUsers();
-    
-    $this->render('admin/users', [
-        'title' => 'Користувачі системи',
-        'users' => $users,
-        'activePage' => 'admin-users',
-    ]);
-}
+    public function users(): void
+    {
+        $this->checkAdmin();
+        $this->checkAccess('users');
+        
+        $userRoleModel = new UserRoleModel($this->db);
+        $users = $userRoleModel->getAllUsers();
+        
+        $this->render('admin/users', [
+            'title' => 'Користувачі системи',
+            'users' => $users,
+            'activePage' => 'admin-users',
+        ]);
+    }
 
-public function userEdit($id = null): void
-{
-    $this->checkAdmin();
-    $this->checkAccess('userEdit');
-    
-    $userRoleModel = new UserRoleModel($this->db);
-    $warehouseModel = new WarehouseModel($this->db);
-    $materialModel = new MaterialModel($this->db);
-    $resourceModel = new ResourceModel($this->db);
-    
-    $user = null;
-    if ($id) {
-        $allUsers = $userRoleModel->getAllUsers();
-        foreach ($allUsers as $u) {
-            if ($u['id'] == $id) {
-                $user = $u;
-                break;
+    public function userEdit($id = null): void
+    {
+        $this->checkAdmin();
+        $this->checkAccess('userEdit');
+        
+        $userRoleModel = new UserRoleModel($this->db);
+        $warehouseModel = new WarehouseModel($this->db);
+        $materialModel = new MaterialModel($this->db);
+        $resourceModel = new ResourceModel($this->db);
+        
+        $user = null;
+        if ($id) {
+            $allUsers = $userRoleModel->getAllUsers();
+            foreach ($allUsers as $u) {
+                if ($u['id'] == $id) {
+                    $user = $u;
+                    break;
+                }
             }
         }
+        
+        $warehouses = $warehouseModel->getAll('name ASC');
+        $materials = $materialModel->getAll('name ASC');
+        $resourceTypes = $resourceModel->getTypes();
+        
+        $this->render('admin/user_edit', [
+            'title' => 'Редагування користувача',
+            'user' => $user,
+            'warehouses' => $warehouses,
+            'materials' => $materials,
+            'resourceTypes' => $resourceTypes,
+            'activePage' => 'admin-users',
+        ]);
     }
-    
-    $warehouses = $warehouseModel->getAll('name ASC');
-    $materials = $materialModel->getAll('name ASC');
-    $resourceTypes = $resourceModel->getTypes();
-    
-    $this->render('admin/user_edit', [
-        'title' => 'Редагування користувача',
-        'user' => $user,
-        'warehouses' => $warehouses,
-        'materials' => $materials,
-        'resourceTypes' => $resourceTypes,
-        'activePage' => 'admin-users',
-    ]);
-}
 
-public function userSave(): void
-{
-    $this->checkAdmin();
-    $this->checkAccess('userSave');
-    
-    if (!$this->isPost()) {
+    public function userSave(): void
+    {
+        $this->checkAdmin();
+        $this->checkAccess('userSave');
+        
+        if (!$this->isPost()) {
+            $this->redirect('admin/users');
+            return;
+        }
+        
+        $ncUser = $this->post('nc_user');
+        $role = $this->post('role', 'viewer');
+        
+        $allowedWarehouses = $this->post('allowed_warehouses');
+        $allowedWarehouses = !empty($allowedWarehouses) ? array_filter($allowedWarehouses) : null;
+        
+        $allowedMaterials = $this->post('allowed_materials');
+        $allowedMaterials = !empty($allowedMaterials) ? array_filter($allowedMaterials) : null;
+        
+        $allowedResourceTypes = $this->post('allowed_resource_types');
+        $allowedResourceTypes = !empty($allowedResourceTypes) ? array_filter($allowedResourceTypes) : null;
+        
+        $canEditRates = (bool)$this->post('can_edit_rates');
+        $canExport = (bool)$this->post('can_export');
+        $canImport = (bool)$this->post('can_import');
+        
+        if (empty($ncUser)) {
+            $this->flash('error', 'Логін користувача обов\'язковий');
+            $this->redirect('admin/users');
+            return;
+        }
+        
+        $userRoleModel = new UserRoleModel($this->db);
+        $userRoleModel->createOrUpdate($ncUser, [
+            'role' => $role,
+            'allowed_warehouses' => $allowedWarehouses,
+            'allowed_materials' => $allowedMaterials,
+            'allowed_resource_types' => $allowedResourceTypes,
+            'can_edit_rates' => $canEditRates,
+            'can_export' => $canExport,
+            'can_import' => $canImport,
+        ]);
+        
+        $this->flash('success', 'Користувача збережено');
         $this->redirect('admin/users');
-        return;
     }
-    
-    $ncUser = $this->post('nc_user');
-    $role = $this->post('role', 'viewer');
-    
-    $allowedWarehouses = $this->post('allowed_warehouses');
-    $allowedWarehouses = !empty($allowedWarehouses) ? array_filter($allowedWarehouses) : null;
-    
-    $allowedMaterials = $this->post('allowed_materials');
-    $allowedMaterials = !empty($allowedMaterials) ? array_filter($allowedMaterials) : null;
-    
-    $allowedResourceTypes = $this->post('allowed_resource_types');
-    $allowedResourceTypes = !empty($allowedResourceTypes) ? array_filter($allowedResourceTypes) : null;
-    
-    $canEditRates = (bool)$this->post('can_edit_rates');
-    $canExport = (bool)$this->post('can_export');
-    $canImport = (bool)$this->post('can_import');
-    
-    if (empty($ncUser)) {
-        $this->flash('error', 'Логін користувача обов\'язковий');
-        $this->redirect('admin/users');
-        return;
-    }
-    
-    $userRoleModel = new UserRoleModel($this->db);
-    $userRoleModel->createOrUpdate($ncUser, [
-        'role' => $role,
-        'allowed_warehouses' => $allowedWarehouses,
-        'allowed_materials' => $allowedMaterials,
-        'allowed_resource_types' => $allowedResourceTypes,
-        'can_edit_rates' => $canEditRates,
-        'can_export' => $canExport,
-        'can_import' => $canImport,
-    ]);
-    
-    $this->flash('success', 'Користувача збережено');
-    $this->redirect('admin/users');
-}
 
-
-    /**
-     * Видалення користувача
-     */
     public function userDelete($id): void
     {
         $this->checkAdmin();
@@ -313,9 +294,6 @@ public function userSave(): void
         $this->redirect('admin/users');
     }
 
-    /**
-     * Сторінка управління меню
-     */
     public function menu(): void
     {
         $this->checkAdmin();
@@ -333,9 +311,6 @@ public function userSave(): void
         ]);
     }
 
-    /**
-     * Збереження меню
-     */
     public function menuSave(): void
     {
         $this->checkAdmin();
@@ -346,25 +321,34 @@ public function userSave(): void
             return;
         }
         
-        $menuModel = new MenuModel($this->db);
         $items = $this->post('items', []);
+        $menuModel = new MenuModel($this->db);
         
         foreach ($items as $id => $data) {
-            $menuModel->updateItem((int)$id, [
-                'label' => $data['label'] ?? null,
-                'icon_svg' => $data['icon_svg'] ?? null,
-                'is_enabled' => isset($data['is_enabled']) ? 1 : 0,
-                'requires_date_range' => isset($data['requires_date_range']) ? 1 : 0,
-            ]);
+            $updateData = [];
+            if (isset($data['label'])) {
+                $updateData['label'] = $data['label'];
+            }
+            if (isset($data['is_enabled'])) {
+                $updateData['is_enabled'] = 1;
+            } else {
+                $updateData['is_enabled'] = 0;
+            }
+            if (isset($data['requires_date_range'])) {
+                $updateData['requires_date_range'] = 1;
+            } else {
+                $updateData['requires_date_range'] = 0;
+            }
+            
+            if (!empty($updateData)) {
+                $menuModel->updateItem((int)$id, $updateData);
+            }
         }
         
         $this->flash('success', 'Меню збережено');
         $this->redirect('admin/menu');
     }
 
-    /**
-     * Сортування меню (drag&drop)
-     */
     public function menuReorder(): void
     {
         $this->checkAdmin();
@@ -385,9 +369,6 @@ public function userSave(): void
         }
     }
 
-    /**
-     * Сторінка прав доступу
-     */
     public function permissions($userId = null): void
     {
         $this->checkAdmin();
@@ -402,14 +383,18 @@ public function userSave(): void
         $selectedUser = null;
         $userPermissions = [];
         
-        if ($userId) {
+        $requestedId = $_GET['user_id'] ?? $userId ?? null;
+        
+        if ($requestedId) {
             foreach ($users as $u) {
-                if ($u['id'] == $userId) {
+                if ($u['id'] == $requestedId) {
                     $selectedUser = $u;
                     break;
                 }
             }
-        } elseif (!empty($users)) {
+        }
+        
+        if (!$selectedUser && !empty($users)) {
             $selectedUser = $users[0];
         }
         
@@ -431,9 +416,6 @@ public function userSave(): void
         ]);
     }
 
-    /**
-     * Збереження прав доступу
-     */
     public function permissionsSave(): void
     {
         $this->checkAdmin();
@@ -453,10 +435,33 @@ public function userSave(): void
             return;
         }
         
-        $permissionModel = new UserMenuPermissionModel($this->db);
-        $permissionModel->setUserPermissions($ncUser, $permissions);
+        $menuModel = new MenuModel($this->db);
+        $allItems = $menuModel->getAllItems();
+        foreach ($allItems as $item) {
+            if ($item['controller'] !== null && !isset($permissions[$item['id']])) {
+                $permissions[$item['id']] = 'none';
+            }
+        }
         
-        $this->flash('success', 'Права збережено');
-        $this->redirect('admin/permissions');
+        $permissionModel = new UserMenuPermissionModel($this->db);
+        $result = $permissionModel->setUserPermissions($ncUser, $permissions);
+        
+        if ($result) {
+            $this->flash('success', 'Права збережено');
+        } else {
+            $this->flash('error', 'Помилка збереження прав');
+        }
+        
+        $userRoleModel = new UserRoleModel($this->db);
+        $users = $userRoleModel->getAllUsers();
+        $userId = null;
+        foreach ($users as $u) {
+            if ($u['nc_user'] === $ncUser) {
+                $userId = $u['id'];
+                break;
+            }
+        }
+        
+        $this->redirect('admin/permissions?user_id=' . $userId);
     }
 }

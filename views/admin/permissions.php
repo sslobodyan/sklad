@@ -4,7 +4,7 @@
         <p class="page-subtitle">Налаштування рівнів доступу до пунктів меню</p>
     </div>
     <div class="header-buttons">
-        <a href="<?= $basePath ?>/admin/users" class="btn btn-secondary">Користувачі</a>
+        <a href="<?= $basePath ?>/adminUsers" class="btn btn-secondary">Користувачі</a>
     </div>
 </div>
 
@@ -27,7 +27,7 @@
 <?php if ($selectedUser): ?>
 <div class="card card-stretch">
     <div class="table-scroll">
-        <form method="post" action="<?= $basePath ?>/admin/permissions/save">
+        <form method="post" action="<?= $basePath ?>/adminPermissions/save">
             <input type="hidden" name="nc_user" value="<?= htmlspecialchars($selectedUser['nc_user']) ?>">
             
             <table class="data-table">
@@ -46,16 +46,22 @@
                     </tr>
                     <?php
                     $groupItems = array_filter($menuItems, function($item) use ($group) {
-                        return $item['parent_id'] == $group['id'];
+                        return $item['parent_id'] == $group['id'] && $item['controller'] !== null;
                     });
                     foreach ($groupItems as $item):
                         $currentLevel = $userPermissions[$item['id']] ?? 'none';
                     ?>
                     <tr>
-                        <td style="padding-left: 24px;"><?= htmlspecialchars($item['label']) ?></td>
-                        <td class="text-center"><input type="radio" name="permissions[<?= $item['id'] ?>]" value="none" <?= $currentLevel === 'none' ? 'checked' : '' ?>></td>
-                        <td class="text-center"><input type="radio" name="permissions[<?= $item['id'] ?>]" value="view" <?= $currentLevel === 'view' ? 'checked' : '' ?>></td>
-                        <td class="text-center"><input type="radio" name="permissions[<?= $item['id'] ?>]" value="edit" <?= $currentLevel === 'edit' ? 'checked' : '' ?>></td>
+                        <td style="padding-left: 24px;"><?= htmlspecialchars($item['label']) ?> (<?= htmlspecialchars($item['controller']) ?>)</td>
+                        <td class="text-center">
+                            <input type="radio" name="permissions[<?= $item['id'] ?>]" value="none" <?= $currentLevel === 'none' ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="radio" name="permissions[<?= $item['id'] ?>]" value="view" <?= $currentLevel === 'view' ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="radio" name="permissions[<?= $item['id'] ?>]" value="edit" <?= $currentLevel === 'edit' ? 'checked' : '' ?>>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                     <?php endforeach; ?>

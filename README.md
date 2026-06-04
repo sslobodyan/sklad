@@ -4,6 +4,63 @@
 --------------------------------------------------------------------------------------------------------------------------
 ## Журнал змін (останні зверху)
 
+### Система прав доступу та динамічного меню (оновлення від 04.06.2026)
+
+Що зроблено:
+
+Таблиці БД
+menu_items - зберігає пункти меню (групи, назви, порядок, URL)
+user_roles - ролі користувачів (manager, viewer, fuel) та обмеження по складах/матеріалах/типах ресурсів
+user_menu_permissions - права доступу до пунктів меню (none/view/edit)
+
+Динамічне меню
+
+Меню будується з таблиці menu_items замість хардкоду в layout.php
+
+Групи меню: Документи, Звіти, Довідники, Система
+
+Пункти меню показуються тільки якщо користувач має права (view/edit)
+
+Розподіл прав
+
+Адміністратори (група admin в Nextcloud) мають повний доступ
+Для звичайних користувачів права налаштовуються через адмінку
+Рівень view дозволяє тільки перегляд (GET запити)
+Рівень edit дозволяє всі операції (GET+POST)
+
+Нові контролери
+
+Окремі контролери для кожного пункту меню:
+ReportWarehouseController, ReportMaterialController, ReportResourceController
+ResourceTypesController, ResourceRatesController
+AdminUsersController, AdminMenuController, AdminPermissionsController, AdminBackupController, AdminRestoreController
+Всі контролери використовують трейт AuthorizeTrait
+
+Адмінка
+
+adminUsers - керування користувачами (ролі, обмеження)
+adminMenu - редагування назв пунктів меню, видимість, потреба в діапазоні дат
+adminPermissions - налаштування прав доступу до пунктів меню
+adminBackup / adminRestore - бекап та відновлення БД
+
+Фільтрація в контролерах
+
+Додано методи filterWarehouses(), filterMaterials(), filterResourceTypes() в трейті
+
+Використовуються в ReportsController, MovementsController, ResourcesController
+
+Структура URL (camelCase):
+
+/adminUsers - список користувачів
+/adminUsers/edit/1 - редагування користувача
+/adminMenu - управління меню
+/adminPermissions - права доступу
+/resourceTypes - типи ресурсів
+/resourceRates - норми списання
+/reportWarehouse - звіт по складу
+/reportMaterial - звіт по матеріалу
+/reportResource - звіт по ресурсу
+
 ### Мобільна адаптація та покращення UI (травень 2026)
 - **Додано кнопку-гамбургер** для відкриття сайдбару на мобільних пристроях
 - **Autocomplete на мобільних** – замінено на нативний select для уникнення проблем з клавіатурою

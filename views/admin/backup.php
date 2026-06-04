@@ -7,7 +7,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" action="<?= $basePath ?>/admin/dobackup">
+        <form method="POST" action="<?= $basePath ?>/adminBackup/doBackup">
             <div class="alert alert-info" style="background: #e3f2fd; border: 1px solid #1565c0; padding: 12px; margin-bottom: 20px; border-radius: 6px;">
                 <strong>📦 Що включається в бекап:</strong>
                 <ul style="margin: 8px 0 0 20px;">

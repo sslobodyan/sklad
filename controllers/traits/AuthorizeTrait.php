@@ -12,21 +12,25 @@ trait AuthorizeTrait
         return $this->permManager;
     }
 
-    protected function checkAccess(string $action): void
-    {
-        $user = PermissionManager::getCurrentUser();
-        $controller = $this->getControllerName();
-
-        if (!$this->getPermManager()->canAccess($user, $controller, $action)) {
-            if ($this->isAjax()) {
-                $this->json(['success' => false, 'error' => 'Доступ заборонено']);
-            } else {
-                $this->flash('error', 'Доступ заборонено');
-                $this->redirect('dashboard');
-            }
-            exit;
+protected function checkAccess(string $action): void
+{
+    $user = PermissionManager::getCurrentUser();
+    $controller = $this->getControllerName();
+    
+    error_log("=== checkAccess ===");
+    error_log("Action: " . $action);
+    
+    if (!$this->getPermManager()->canAccess($user, $controller, $action)) {
+        error_log("Access denied for action: " . $action);
+        if (method_exists($this, 'isAjax') && $this->isAjax()) {
+            $this->json(['success' => false, 'error' => 'Доступ заборонено']);
+        } else {
+            $this->flash('error', 'Доступ заборонено');
+            $this->redirect('dashboard');
         }
+        exit;
     }
+}
 
     protected function getAccessLevel(string $controller): string
     {
@@ -83,12 +87,12 @@ trait AuthorizeTrait
         $this->getPermManager()->logActivity($user, $action, $controller, $itemId, $details);
     }
 
-    private function getControllerName(): string
+    protected function getControllerName(): string
     {
-        $className = get_class($this);
+        $fullClass = get_class($this);
+        $parts = explode('\\', $fullClass);
+        $className = end($parts);
         $className = str_replace('Controller', '', $className);
-        $className = str_replace('controllers\\', '', $className);
         return strtolower($className);
     }
-
 }

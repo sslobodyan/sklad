@@ -6,11 +6,9 @@
  * Працює як standalone або вбудований у Nextcloud (iframe / NC App)
  * Підтримує мульти-базу: різні БД для різних груп Nextcloud
  */
-// Дозвіл вбудовування у iframe (Nextcloud External Sites або NC App)
 header('X-Frame-Options: ALLOWALL');
 header('Content-Security-Policy: frame-ancestors *');
 
-// Налаштування сесії для роботи в iframe (Nextcloud)
 $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
 session_set_cookie_params([
     'lifetime' => 86400 * 30,
@@ -22,17 +20,12 @@ session_set_cookie_params([
 
 date_default_timezone_set('Europe/Kyiv');
 
-// Розкоментувати для налагодження
-// ini_set('display_errors', 1);
-// ini_set('display_startup_errors', 1);
-// error_reporting(E_ALL);
-
 session_start();
 define('ROOT_PATH', __DIR__);
 define('BASE_PATH', rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'));
 
 // =============================================
-// Авторизація через Nextcloud (якщо є параметри)
+// Авторизація через Nextcloud
 // =============================================
 $ncUser = $_GET['nc_user'] ?? null;
 $ncGroups = $_GET['nc_groups'] ?? null;
@@ -41,7 +34,6 @@ $ncTs = $_GET['nc_ts'] ?? null;
 $ncSig = $_GET['nc_sig'] ?? null;
 
 if ($ncUser !== null && $ncSig !== null) {
-    // Завантажити секрет
     $authConfig = [];
     $authFile = ROOT_PATH . '/config/nc_auth.php';
     if (file_exists($authFile)) {
@@ -50,15 +42,12 @@ if ($ncUser !== null && $ncSig !== null) {
     $secret = $authConfig['secret'] ?? '';
     $maxAge = $authConfig['max_age'] ?? 86400 * 30;
     
-    // Перевірити підпис
     $expectedSig = hash_hmac('sha256', $ncUser . '|' . $ncGroups . '|' . $ncTs, $secret);
     if ($secret && hash_equals($expectedSig, $ncSig) && (time() - (int)$ncTs) < $maxAge) {
-        // Підпис валідний — зберегти в сесію
         $_SESSION['nc_user'] = $ncUser;
         $_SESSION['nc_display_name'] = $ncName;
         $_SESSION['nc_groups'] = $ncGroups ? explode(',', $ncGroups) : [];
         
-        // Визначити БД за групою
         $dbConfigFile = ROOT_PATH . '/config/databases.php';
         if (file_exists($dbConfigFile)) {
             $databases = require $dbConfigFile;
@@ -77,7 +66,6 @@ if ($ncUser !== null && $ncSig !== null) {
     }
 }
 
-// Зберігаємо NC-дані для view (для показу імені юзера тощо)
 define('NC_USER', $_SESSION['nc_user'] ?? '');
 define('NC_DISPLAY_NAME', $_SESSION['nc_display_name'] ?? '');
 define('NC_GROUPS', $_SESSION['nc_groups'] ?? []);
@@ -95,17 +83,14 @@ spl_autoload_register(function ($class) {
     }
 });
 
-// Конфігурація
 require_once ROOT_PATH . '/config/database.php';
 
-// Ініціалізація бази даних (автоматично підбере базу за групою)
 try {
     $db = Database::getInstance();
 } catch (Exception $e) {
     die('Помилка підключення до бази даних: ' . $e->getMessage());
 }
 
-// Синхронізація поточного користувача
 $permManager = PermissionManager::getInstance($db);
 $permManager->syncCurrentUser();
 
@@ -122,21 +107,16 @@ if (empty($route)) {
     exit;
 }
 
-// Додати перевірку для dashboard (вже є в списку, але додамо явно)
-if ($route === 'dashboard') {
-    $controllerName = 'DashboardController';
-    $action = 'index';
-    $id = null;
-}
-
 $parts = explode('/', $route);
 $controllerName = ucfirst($parts[0]) . 'Controller';
 $action = $parts[1] ?? 'index';
 $id = $parts[2] ?? null;
 
 // =============================================
-// Підміна контролерів для Movements
+// Спеціальні маршрути для імпорту/експорту
 // =============================================
+
+// Movements: import, export
 if ($controllerName === 'MovementsController') {
     if ($action === 'import') {
         $controllerName = 'MovementsImportController';
@@ -146,133 +126,31 @@ if ($controllerName === 'MovementsController') {
         $controllerName = 'MovementsExportController';
         $action = 'export';
         $id = null;
-    } elseif ($action === 'history') {
-        $controllerName = 'MovementsController';
-        $action = 'history';
     }
 }
 
-// =============================================
-// Підміна контролерів для Resources
-// =============================================
-if ($controllerName === 'ResourcesController') {
-    if ($action === 'types') {
-        $controllerName = 'ResourceTypesController';
-        $action = 'types';
-        $id = null;
-    } elseif ($action === 'savetype') {
-        $controllerName = 'ResourceTypesController';
-        $action = 'savetype';
-    } elseif ($action === 'deletetype') {
-        $controllerName = 'ResourceTypesController';
-        $action = 'deletetype';
-    } elseif ($action === 'rates') {
-        $controllerName = 'ResourceRatesController';
-        $action = 'rates';
-        $id = null;
-    } elseif ($action === 'addresource') {
-        $controllerName = 'ResourceRatesController';
-        $action = 'addresource';
-        $id = null;
-    } elseif ($action === 'removeresource') {
-        $controllerName = 'ResourceRatesController';
-        $action = 'removeresource';
-        $id = null;
-    } elseif ($action === 'saverate') {
-        $controllerName = 'ResourceRatesController';
-        $action = 'saverate';
-        $id = null;
-    } elseif ($action === 'deleterate') {
-        $controllerName = 'ResourceRatesController';
-        $action = 'deleterate';
-    } elseif ($action === 'export') {
-        $controllerName = 'ResourceExportController';
-        $action = 'export';
-        $id = null;
-    }
-}
-
-if ($controllerName === 'ReportsController') {
-    if ($action === 'resource' && $id === 'export') {
-        // URL: /reports/resource/export
-        $controllerName = 'ResourceUsageExportController';
-        $action = 'export';
-        $id = null;
-    } elseif ($action === 'resource') {
-        // URL: /reports/resource
-        $controllerName = 'ResourceReportController';
-        $action = 'index';
-        $id = null;
-    }
-}
-
-// =============================================
-// Спеціальні маршрути для адміністрування
-// =============================================
-if ($route === 'admin/backup') {
-    $controllerName = 'AdminController';
-    $action = 'backup';
-    $id = null;
-} elseif ($route === 'admin/restore') {
-    $controllerName = 'AdminController';
-    $action = 'restore';
-    $id = null;
-} elseif ($route === 'admin/dobackup') {
-    $controllerName = 'AdminController';
-    $action = 'doBackup';
-    $id = null;
-} elseif ($route === 'admin/dorestore') {
-    $controllerName = 'AdminController';
-    $action = 'doRestore';
+// Resources: export
+if ($controllerName === 'ResourcesController' && $action === 'export') {
+    $controllerName = 'ResourceExportController';
+    $action = 'export';
     $id = null;
 }
 
-// Маршрути для управління користувачами та правами
-if ($route === 'admin/users') {
-    $controllerName = 'AdminController';
-    $action = 'users';
-    $id = null;
-} elseif ($route === 'admin/users/edit') {
-    $controllerName = 'AdminController';
-    $action = 'userEdit';
-    $id = (int)($_GET['id'] ?? 0);
-} elseif ($route === 'admin/users/save') {
-    $controllerName = 'AdminController';
-    $action = 'userSave';
-    $id = null;
-} elseif ($route === 'admin/users/delete') {
-    $controllerName = 'AdminController';
-    $action = 'userDelete';
-    $id = (int)($_GET['id'] ?? 0);
-} elseif ($route === 'admin/menu') {
-    $controllerName = 'AdminController';
-    $action = 'menu';
-    $id = null;
-} elseif ($route === 'admin/menu/save') {
-    $controllerName = 'AdminController';
-    $action = 'menuSave';
-    $id = null;
-} elseif ($route === 'admin/menu/reorder') {
-    $controllerName = 'AdminController';
-    $action = 'menuReorder';
-    $id = null;
-} elseif ($route === 'admin/permissions') {
-    $controllerName = 'AdminController';
-    $action = 'permissions';
-    $id = (int)($_GET['id'] ?? 0);
-} elseif ($route === 'admin/permissions/save') {
-    $controllerName = 'AdminController';
-    $action = 'permissionsSave';
-    $id = null;
-} elseif ($route === 'settings/controller-labels') {
-    $controllerName = 'SettingsController';
-    $action = 'controllerLabels';
-    $id = null;
-} elseif ($route === 'settings/controller-labels/save') {
-    $controllerName = 'SettingsController';
-    $action = 'saveControllerLabels';
+// Reports: resource/export
+if ($controllerName === 'ReportsController' && $action === 'resource' && $id === 'export') {
+    $controllerName = 'ResourceUsageExportController';
+    $action = 'export';
     $id = null;
 }
+
+error_log("=== ROUTING ===");
+error_log("route: " . $route);
+error_log("parts: " . print_r($parts, true));
+error_log("controllerName: " . $controllerName);
+error_log("action: " . $action);
+error_log("id: " . $id);
+error_log("controllerFile: " . $controllerFile);
+
 
 // =============================================
 // Перевірка існування контролера
@@ -284,13 +162,13 @@ if (!file_exists($controllerFile)) {
     exit;
 }
 
+// =============================================
 // Перевірка доступу
-$actionMethod = $action;
-if ($id !== null) {
-    $actionMethod = $action;
-}
+// =============================================
+// Використовуємо повний маршрут як назву контролера для перевірки
+$controllerForAccess = $route;
 
-if (!PermissionManager::getInstance($db)->canAccess(NC_USER, $controllerName, $actionMethod)) {
+if (!PermissionManager::getInstance($db)->canAccess(NC_USER, $controllerForAccess, $action)) {
     if (PermissionManager::isAjax()) {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
@@ -315,7 +193,6 @@ try {
         exit;
     }
     
-    // Викликаємо метод з ID (якщо є)
     if ($id !== null) {
         $controller->$action($id);
     } else {
@@ -327,20 +204,13 @@ try {
     to_log('Помилка виконання', ['error' => $e->getMessage(), 'route' => $route]);
 }
 
-// =============================================
-// Функція для логування
-// =============================================
 function to_log($message, $data = null) {
     $file = __DIR__ . '/debug.log';
     $time = date('Y-m-d H:i:s');
-    
-    // Форматуємо повідомлення
     $output = "[$time] $message  ";
     if ($data !== null) {
         $output .= print_r($data, true);
     }
     $output .= "\n";
-    
-    // Записуємо у файл debug.log (дописує в кінець файлу)
     file_put_contents($file, $output, FILE_APPEND);
 }

@@ -59,40 +59,49 @@ class PermissionManager
     /**
      * Перевірка доступу до контролера та дії
      */
-    public function canAccess(string $ncUser, string $controller, string $action): bool
-    {
-        // Порожній користувач
-        if (empty($ncUser)) {
-            return false;
-        }
-
-        // Адмін з Nextcloud має повний доступ
-        if ($this->isAdminFromSession()) {
-            return true;
-        }
-
-        // Отримуємо пункт меню за контролером
-        $menuItem = $this->getMenuModel()->getByController($controller);
-        if (!$menuItem) {
-            return false;
-        }
-
-        $accessLevel = $this->getPermissionModel()->getAccessLevel($ncUser, $menuItem['id']);
-
-        if ($accessLevel === 'none') {
-            return false;
-        }
-
-        if ($accessLevel === 'view') {
-            return in_array($action, self::VIEW_METHODS);
-        }
-
-        if ($accessLevel === 'edit') {
-            return true;
-        }
-
+public function canAccess(string $ncUser, string $controller, string $action): bool
+{
+    if (empty($ncUser)) {
+        error_log("canAccess: empty user - false");
         return false;
     }
+
+    if ($this->isAdminFromSession()) {
+        error_log("canAccess: isAdminFromSession true - access granted");
+        return true;
+    }
+
+    error_log("canAccess: user=$ncUser, controller=$controller, action=$action");
+
+    $menuItem = $this->getMenuModel()->getByController($controller);
+    if (!$menuItem) {
+        error_log("canAccess: menuItem not found for controller=$controller - false");
+        return false;
+    }
+
+    $accessLevel = $this->getPermissionModel()->getAccessLevel($ncUser, $menuItem['id']);
+    error_log("canAccess: menuItemId={$menuItem['id']}, accessLevel=$accessLevel");
+
+    if ($accessLevel === 'none') {
+        error_log("canAccess: accessLevel none - false");
+        return false;
+    }
+
+    if ($accessLevel === 'view') {
+        $allowed = in_array($action, self::VIEW_METHODS);
+        error_log("canAccess: view level, action=$action, allowed=" . ($allowed ? "true" : "false"));
+        return $allowed;
+    }
+
+    if ($accessLevel === 'edit') {
+        error_log("canAccess: edit level - true");
+        return true;
+    }
+
+    error_log("canAccess: unknown - false");
+    return false;
+}
+
 
     /**
      * Отримати рівень доступу до контролера

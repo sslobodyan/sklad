@@ -7,8 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= $basePath ?>/assets/css/main.css">
-
-
     <style>
         .flash-container {
             position: fixed;
@@ -86,8 +84,17 @@
             <aside class="sidebar" id="sidebar">
                 <nav class="sidebar-nav">
                     <?php
-                    $menuModel = new MenuModel($db);
-                    $menuItems = $menuModel->getUserMenu(NC_USER);
+                    $database = $db ?? null;
+                    $menuItems = [];
+                    
+                    if ($database) {
+                        try {
+                            $menuModel = new MenuModel($database);
+                            $menuItems = $menuModel->getUserMenu(NC_USER);
+                        } catch (Exception $e) {
+                            error_log('MenuModel error: ' . $e->getMessage());
+                        }
+                    }
                     
                     foreach ($menuItems as $group):
                         if (empty($group['items'])) continue;
@@ -96,7 +103,12 @@
                             <div class="nav-group-label"><?= htmlspecialchars($group['label']) ?></div>
                             <?php foreach ($group['items'] as $item): ?>
                                 <?php
-                                $url = $item['url'] ?? BASE_PATH . '/' . $item['controller'];
+                                // Формуємо URL
+                                if (!empty($item['url'])) {
+                                    $url = $item['url'];
+                                } else {
+                                    $url = BASE_PATH . '/' . $item['controller'];
+                                }
                                 
                                 if ($item['requires_date_range']) {
                                     $params = [];

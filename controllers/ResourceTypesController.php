@@ -1,11 +1,9 @@
 <?php
-/**
- * Контролер типів ресурсів
- */
+
 class ResourceTypesController extends Controller
 {
     use AuthorizeTrait;
-
+    
     private ResourceModel $model;
 
     public function __construct(Database $db)
@@ -14,11 +12,10 @@ class ResourceTypesController extends Controller
         $this->model = new ResourceModel($db);
     }
 
-    public function types(): void
+    public function index(): void
     {
-
-        $this->checkAccess('types');
-
+        $this->checkAccess('index');
+        
         $types = $this->model->getTypes();
 
         $this->render('resources/types', [
@@ -28,54 +25,53 @@ class ResourceTypesController extends Controller
         ]);
     }
 
-public function savetype($id = null): void
-{
-
-    $this->checkAccess('savetype');
-
-    if (!$this->isPost()) {
-        $this->redirect('resources/types');
-        return;
-    }
-
-    $name = trim($this->post('name', ''));
-    $unit = trim($this->post('unit', ''));
-    $format = $this->post('format', 'int');
-    $showHours = $this->getCheckbox('show_hours');
-    
-    if (!in_array($format, ['int', 'dec2', 'hm'])) {
-        $format = 'int';
-    }
-
-    if (!$name || !$unit) {
-        $this->respondAjax(false, 'Заповніть назву та одиницю');
-        return;
-    }
-
-    // Безпосередньо використовуємо ResourceTypesModel замість ResourceModel
-    $typesModel = new ResourceTypesModel($this->db);
-    
-    if ($id) {
-        $typesModel->updateType((int)$id, $name, $unit, $format, $showHours);
-    } else {
-        $typesModel->createType($name, $unit, $format, $showHours);
-    }
-
-    $this->respondAjax(true, $id ? 'Тип оновлено' : 'Тип додано');
-}
-
-    public function deletetype($id): void
+    public function save($id = null): void
     {
+        $this->checkAccess('save');
+        
+        if (!$this->isPost()) {
+            $this->redirect('resource-types');
+            return;
+        }
 
-        $this->checkAccess('deletetype');
+        $name = trim($this->post('name', ''));
+        $unit = trim($this->post('unit', ''));
+        $format = $this->post('format', 'int');
+        $showHours = $this->getCheckbox('show_hours');
+        
+        if (!in_array($format, ['int', 'dec2', 'hm'])) {
+            $format = 'int';
+        }
 
+        if (!$name || !$unit) {
+            $this->respondAjax(false, 'Заповніть назву та одиницю');
+            return;
+        }
+
+        $typesModel = new ResourceTypesModel($this->db);
+        
+        if ($id) {
+            $typesModel->updateType((int)$id, $name, $unit, $format, $showHours);
+            $message = 'Тип оновлено';
+        } else {
+            $typesModel->createType($name, $unit, $format, $showHours);
+            $message = 'Тип додано';
+        }
+
+        $this->respondAjax(true, $message);
+    }
+
+    public function delete($id): void
+    {
+        $this->checkAccess('delete');
+        
         if ($this->model->isTypeUsed((int)$id)) {
             $this->flash('error', 'Неможливо видалити: тип використовується');
         } else {
             $this->model->deleteType((int)$id);
             $this->flash('success', 'Тип видалено');
         }
-        $this->redirect('resources/types');
+        $this->redirect('resource-types');
     }
 
     private function respondAjax(bool $success, string $message): void
@@ -84,7 +80,7 @@ public function savetype($id = null): void
             $this->json(['success' => $success, $success ? 'message' : 'error' => $message]);
         } else {
             $this->flash($success ? 'success' : 'error', $message);
-            $this->redirect('resources/types');
+            $this->redirect('resource-types');
         }
     }
 
@@ -93,5 +89,9 @@ public function savetype($id = null): void
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
-
+    
+    protected function getCheckbox(string $key): int
+    {
+        return $this->post($key) ? 1 : 0;
+    }
 }

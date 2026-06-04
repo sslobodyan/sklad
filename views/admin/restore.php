@@ -7,7 +7,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" action="<?= $basePath ?>/admin/dorestore" enctype="multipart/form-data">
+        <form method="POST" action="<?= $basePath ?>/adminRestore/doRestore" enctype="multipart/form-data">
             <div class="form-group">
                 <label class="form-label">Файл бекапу <span class="required">*</span></label>
                 <input type="file" name="backup_file" class="form-input" accept=".sql,.zip" required>
