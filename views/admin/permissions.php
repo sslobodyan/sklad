@@ -9,7 +9,7 @@
 </div>
 
 <div class="card filter-panel">
-    <form method="get" action="<?= $basePath ?>/admin/permissions" class="filter-grid filter-grid-with-action">
+    <form method="get" action="<?= $basePath ?>/adminPermissions" class="filter-grid filter-grid-with-action">
         <div class="form-group">
             <label class="form-label">Користувач</label>
             <select name="user_id" class="form-select" onchange="this.form.submit()">
