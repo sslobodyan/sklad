@@ -88,57 +88,92 @@ class MovementModel extends Model
     /**
      * Отримати рухи з назвами
      */
-    public function getAllWithNames(array $filters = [], string $orderBy = 'm.movement_date DESC, m.id DESC'): array
-    {
-        $where = [];
-        $params = [];
+public function getAllWithNames(array $filters = [], string $orderBy = 'm.movement_date DESC, m.id DESC', ?array $allowedWarehouses = null): array
+{
+    $where = [];
+    $params = [];
 
-        if (!empty($filters['date_from'])) {
-            $where[] = "m.movement_date >= ?";
-            $params[] = $filters['date_from'];
+    if (!empty($filters['date_from'])) {
+        $where[] = "m.movement_date >= ?";
+        $params[] = $filters['date_from'];
+    }
+    if (!empty($filters['date_to'])) {
+        $where[] = "m.movement_date <= ?";
+        $params[] = $filters['date_to'];
+    }
+    if (!empty($filters['warehouse_id'])) {
+        if ($filters['warehouse_id'] === '__incoming') {
+            $where[] = "m.warehouse_from_id IS NULL";
+        } elseif ($filters['warehouse_id'] === '__writeoff') {
+            $where[] = "m.warehouse_to_id IS NULL";
+        } else {
+            $where[] = "(m.warehouse_from_id = ? OR m.warehouse_to_id = ?)";
+            $params[] = $filters['warehouse_id'];
+            $params[] = $filters['warehouse_id'];
         }
-        if (!empty($filters['date_to'])) {
-            $where[] = "m.movement_date <= ?";
-            $params[] = $filters['date_to'];
-        }
-        if (!empty($filters['warehouse_id'])) {
-            if ($filters['warehouse_id'] === '__incoming') {
-                // Прихід ззовні: warehouse_from_id IS NULL
-                $where[] = "m.warehouse_from_id IS NULL";
-            } elseif ($filters['warehouse_id'] === '__writeoff') {
-                // Списання: warehouse_to_id IS NULL
-                $where[] = "m.warehouse_to_id IS NULL";
-            } else {
-                $where[] = "(m.warehouse_from_id = ? OR m.warehouse_to_id = ?)";
-                $params[] = $filters['warehouse_id'];
-                $params[] = $filters['warehouse_id'];
+    }
+    if (!empty($filters['material_id'])) {
+        $where[] = "m.material_id = ?";
+        $params[] = $filters['material_id'];
+    }
+    
+    // Фільтрація по дозволених складах
+    if ($allowedWarehouses !== null && !empty($allowedWarehouses)) {
+        if (count($allowedWarehouses) == 1) {
+            $where[] = "(m.warehouse_from_id = ? OR m.warehouse_to_id = ?)";
+            $params[] = $allowedWarehouses[0];
+            $params[] = $allowedWarehouses[0];
+        } else {
+            // Для декількох складів - використовуємо IN
+            $placeholders = implode(',', array_fill(0, count($allowedWarehouses), '?'));
+            // Розділяємо на три окремі умови з правильним підрахунком параметрів
+            $conditions = [];
+            
+            // Умова 1: прихід ззовні
+            $conditions[] = "(m.warehouse_from_id IS NULL AND m.warehouse_to_id IN ($placeholders))";
+            // Умова 2: списання на сторону
+            $conditions[] = "(m.warehouse_from_id IN ($placeholders) AND m.warehouse_to_id IS NULL)";
+            // Умова 3: переміщення між складами
+            $conditions[] = "(m.warehouse_from_id IN ($placeholders) AND m.warehouse_to_id IN ($placeholders))";
+            
+            $where[] = "(" . implode(' OR ', $conditions) . ")";
+            
+            // Додаємо параметри: для умови 1 - один раз, умови 2 - один раз, умови 3 - два рази
+            foreach ($allowedWarehouses as $wh) {
+                $params[] = $wh; // для умови 1
+            }
+            foreach ($allowedWarehouses as $wh) {
+                $params[] = $wh; // для умови 2
+            }
+            foreach ($allowedWarehouses as $wh) {
+                $params[] = $wh; // для умови 3 (перший IN)
+            }
+            foreach ($allowedWarehouses as $wh) {
+                $params[] = $wh; // для умови 3 (другий IN)
             }
         }
-        if (!empty($filters['material_id'])) {
-            $where[] = "m.material_id = ?";
-            $params[] = $filters['material_id'];
-        }
-
-        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-
-        return $this->db->query(
-            "SELECT m.*,
-                    wf.name AS warehouse_from_name,
-                    wt.name AS warehouse_to_name,
-                    mat.name AS material_name,
-                    rt.unit AS resource_unit,
-                    rt.format AS resource_format
-             FROM movements m
-             LEFT JOIN warehouses wf ON m.warehouse_from_id = wf.id
-             LEFT JOIN warehouses wt ON m.warehouse_to_id = wt.id
-             JOIN materials mat ON m.material_id = mat.id
-             LEFT JOIN resource_logs rl ON m.resource_log_id = rl.id
-             LEFT JOIN resource_types rt ON rl.resource_type_id = rt.id
-             {$whereClause}
-             ORDER BY {$orderBy}",
-            $params
-        )->fetchAll();
     }
+
+    $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    $sql = "SELECT m.*,
+                wf.name AS warehouse_from_name,
+                wt.name AS warehouse_to_name,
+                mat.name AS material_name,
+                rt.unit AS resource_unit,
+                rt.format AS resource_format
+         FROM movements m
+         LEFT JOIN warehouses wf ON m.warehouse_from_id = wf.id
+         LEFT JOIN warehouses wt ON m.warehouse_to_id = wt.id
+         JOIN materials mat ON m.material_id = mat.id
+         LEFT JOIN resource_logs rl ON m.resource_log_id = rl.id
+         LEFT JOIN resource_types rt ON rl.resource_type_id = rt.id
+         {$whereClause}
+         ORDER BY {$orderBy}";
+         
+    return $this->db->query($sql, $params)->fetchAll();
+}
+
 
     /**
      * Звіт по складу

@@ -8,7 +8,10 @@ class PermissionManager
     private ?UserMenuPermissionModel $permissionModel = null;
     private ?MenuModel $menuModel = null;
 
+    // GET методи = дозволені для рівня 'view'
     const VIEW_METHODS = ['index', 'getone', 'history', 'export', 'get', 'view', 'show'];
+
+    // POST методи = дозволені тільки для рівня 'edit'
     const EDIT_METHODS = [
         'save', 'update', 'delete', 'add', 'editlog', 'import',
         'doBackup', 'doRestore', 'saverate', 'addresource',
@@ -20,6 +23,19 @@ class PermissionManager
     {
         $this->db = $db;
     }
+
+    public function getAllowedWarehouses(string $ncUser): ?array
+    {
+        if ($this->isAdminFromSession()) {
+            return null; // null означає всі склади
+        }
+        $user = $this->getUserRoleModel()->getUser($ncUser);
+        if (!$user) {
+            return [];
+        }
+        return $user['allowed_warehouses'];
+    }
+
 
     public static function getInstance(Database $db): self
     {
@@ -53,38 +69,56 @@ class PermissionManager
         return $this->menuModel;
     }
 
-    public function canAccess(string $ncUser, string $controller, string $action): bool
-    {
-        if (empty($ncUser)) {
-            return false;
-        }
-
-        if ($this->isAdminFromSession()) {
-            return true;
-        }
-
-        $menuItem = $this->getMenuModel()->getByController($controller);
-        if (!$menuItem) {
-            return false;
-        }
-
-        $accessLevel = $this->getPermissionModel()->getAccessLevel($ncUser, $menuItem['id']);
-
-        if ($accessLevel === 'none') {
-            return false;
-        }
-
-        if ($accessLevel === 'view') {
-            return in_array($action, self::VIEW_METHODS);
-        }
-
-        if ($accessLevel === 'edit') {
-            return true;
-        }
-
+    /**
+     * Перевірка доступу до контролера та дії
+     */
+public function canAccess(string $ncUser, string $controller, string $action): bool
+{
+    if (empty($ncUser)) {
+        error_log("canAccess: empty user - false");
         return false;
     }
 
+    if ($this->isAdminFromSession()) {
+        error_log("canAccess: isAdminFromSession true - access granted");
+        return true;
+    }
+
+    error_log("canAccess: user=$ncUser, controller=$controller, action=$action");
+
+    $menuItem = $this->getMenuModel()->getByController($controller);
+    if (!$menuItem) {
+        error_log("canAccess: menuItem not found for controller=$controller - false");
+        return false;
+    }
+
+    $accessLevel = $this->getPermissionModel()->getAccessLevel($ncUser, $menuItem['id']);
+    error_log("canAccess: menuItemId={$menuItem['id']}, accessLevel=$accessLevel");
+
+    if ($accessLevel === 'none') {
+        error_log("canAccess: accessLevel none - false");
+        return false;
+    }
+
+    if ($accessLevel === 'view') {
+        $allowed = in_array($action, self::VIEW_METHODS);
+        error_log("canAccess: view level, action=$action, allowed=" . ($allowed ? "true" : "false"));
+        return $allowed;
+    }
+
+    if ($accessLevel === 'edit') {
+        error_log("canAccess: edit level - true");
+        return true;
+    }
+
+    error_log("canAccess: unknown - false");
+    return false;
+}
+
+
+    /**
+     * Отримати рівень доступу до контролера
+     */
     public function getAccessLevel(string $ncUser, string $controller): string
     {
         if ($this->isAdminFromSession()) {
@@ -99,20 +133,9 @@ class PermissionManager
         return $this->getPermissionModel()->getAccessLevel($ncUser, $menuItem['id']);
     }
 
-    public function getAllowedWarehouses(string $ncUser): ?array
-    {
-        if ($this->isAdminFromSession()) {
-            return null;
-        }
-        
-        $user = $this->getUserRoleModel()->getUser($ncUser);
-        if (!$user) {
-            return [];
-        }
-        
-        return $user['allowed_warehouses'];
-    }
-
+    /**
+     * Перевірка доступу до складу
+     */
     public function canViewWarehouse(string $ncUser, int $warehouseId): bool
     {
         if ($this->isAdminFromSession()) {
@@ -122,6 +145,9 @@ class PermissionManager
         return $this->getUserRoleModel()->hasWarehouseAccess($ncUser, $warehouseId);
     }
 
+    /**
+     * Перевірка доступу до матеріалу
+     */
     public function canViewMaterial(string $ncUser, int $materialId): bool
     {
         if ($this->isAdminFromSession()) {
@@ -131,6 +157,9 @@ class PermissionManager
         return $this->getUserRoleModel()->hasMaterialAccess($ncUser, $materialId);
     }
 
+    /**
+     * Перевірка доступу до типу ресурсу
+     */
     public function canViewResourceType(string $ncUser, int $typeId): bool
     {
         if ($this->isAdminFromSession()) {
@@ -140,6 +169,9 @@ class PermissionManager
         return $this->getUserRoleModel()->hasResourceTypeAccess($ncUser, $typeId);
     }
 
+    /**
+     * Фільтрація складів
+     */
     public function filterWarehouses(string $ncUser, array $warehouses): array
     {
         if ($this->isAdminFromSession()) {
@@ -149,6 +181,9 @@ class PermissionManager
         return $this->getUserRoleModel()->filterWarehouses($ncUser, $warehouses);
     }
 
+    /**
+     * Фільтрація матеріалів
+     */
     public function filterMaterials(string $ncUser, array $materials): array
     {
         if ($this->isAdminFromSession()) {
@@ -158,6 +193,9 @@ class PermissionManager
         return $this->getUserRoleModel()->filterMaterials($ncUser, $materials);
     }
 
+    /**
+     * Фільтрація типів ресурсів
+     */
     public function filterResourceTypes(string $ncUser, array $types): array
     {
         if ($this->isAdminFromSession()) {
@@ -180,6 +218,9 @@ class PermissionManager
         });
     }
 
+    /**
+     * Перевірка чи може редагувати норми списання
+     */
     public function canEditRates(string $ncUser): bool
     {
         if ($this->isAdminFromSession()) {
@@ -190,6 +231,9 @@ class PermissionManager
         return $user ? (bool)$user['can_edit_rates'] : false;
     }
 
+    /**
+     * Перевірка чи може експортувати
+     */
     public function canExport(string $ncUser): bool
     {
         if ($this->isAdminFromSession()) {
@@ -200,6 +244,9 @@ class PermissionManager
         return $user ? (bool)$user['can_export'] : false;
     }
 
+    /**
+     * Перевірка чи може імпортувати
+     */
     public function canImport(string $ncUser): bool
     {
         if ($this->isAdminFromSession()) {
@@ -210,11 +257,17 @@ class PermissionManager
         return $user ? (bool)$user['can_import'] : false;
     }
 
+    /**
+     * Перевірка чи є користувач адміністратором
+     */
     public function isAdmin(string $ncUser): bool
     {
         return $this->isAdminFromSession();
     }
 
+    /**
+     * Логування дії
+     */
     public function logActivity(string $ncUser, string $action, string $controller, ?int $itemId = null, ?array $details = null): void
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? null;
@@ -228,23 +281,35 @@ class PermissionManager
         );
     }
 
+    /**
+     * Отримати поточного користувача з сесії
+     */
     public static function getCurrentUser(): string
     {
         return $_SESSION['nc_user'] ?? '';
     }
 
+    /**
+     * Перевірка чи AJAX запит
+     */
     public static function isAjax(): bool
     {
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
 
+    /**
+     * Перевірка адміна з сесії
+     */
     private function isAdminFromSession(): bool
     {
         $groups = $_SESSION['nc_groups'] ?? [];
         return in_array('admin', $groups);
     }
 
+    /**
+     * Синхронізація поточного користувача (викликати при вході)
+     */
     public function syncCurrentUser(): void
     {
         $ncUser = self::getCurrentUser();

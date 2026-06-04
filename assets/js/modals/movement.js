@@ -105,11 +105,20 @@ function addHistoryFeature(container, movementId) {
         })
         .catch(function() {});
 }
+
 function viewMovementModal(data) {
     if (!data) return;
 
     var warehouses = window.warehousesList || [];
     var materials = window.materialsList || [];
+    
+    // Переконуємось що це масиви
+    if (!Array.isArray(warehouses)) {
+        warehouses = Object.values(warehouses);
+    }
+    if (!Array.isArray(materials)) {
+        materials = Object.values(materials);
+    }
 
     var fromName = '—';
     var toName = '—';
@@ -210,6 +219,14 @@ function openMovementModal(data) {
 
     var warehouses = window.warehousesList || [];
     var materials = window.materialsList || [];
+    
+    // Переконуємось що це масиви
+    if (!Array.isArray(warehouses)) {
+        warehouses = Object.values(warehouses);
+    }
+    if (!Array.isArray(materials)) {
+        materials = Object.values(materials);
+    }
 
     var materialOpts = '<option value="">— Оберіть матеріал —</option>';
     materials.forEach(function(m) {

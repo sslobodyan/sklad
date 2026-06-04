@@ -1,7 +1,4 @@
 <?php
-/**
- * Контролер руху матеріалів — основний CRUD
- */
 
 require_once __DIR__ . '/traits/MovementRedirectTrait.php';
 require_once __DIR__ . '/traits/MovementValidationTrait.php';
@@ -26,7 +23,6 @@ class MovementsController extends Controller
 
     public function index(): void
     {
-
         $this->checkAccess('index');
 
         $highlightId = $this->get('highlight');
@@ -49,13 +45,25 @@ class MovementsController extends Controller
         }
 
         $sorting = $this->getSorting();
-        $movements = $this->model->getAllWithNames($filters, $sorting['orderBy']);
+        
+        //$allowedWarehouses = $this->getPermManager()->getAllowedWarehouses(NC_USER);
+        //$movements = $this->model->getAllWithNames($filters, $sorting['orderBy'], $allowedWarehouses);
+
+
+$allowedWarehouses = $this->getPermManager()->getAllowedWarehouses(NC_USER);
+error_log("=== MovementsController::index ===");
+error_log("NC_USER: " . NC_USER);
+error_log("allowedWarehouses: " . print_r($allowedWarehouses, true));
+
+$movements = $this->model->getAllWithNames($filters, $sorting['orderBy'], $allowedWarehouses);
+error_log("Movements count: " . count($movements));
+
 
         $this->render('movements/index', [
             'title' => 'Рух матеріалів',
             'movements' => $movements,
-            'warehouses' => $this->warehouseModel->getAll('name ASC'),
-            'materials' => $this->materialModel->getAll('name ASC'),
+            'warehouses' => $this->filterWarehouses($this->warehouseModel->getAll('name ASC')),
+            'materials' => $this->filterMaterials($this->materialModel->getAll('name ASC')),
             'filters' => $filters,
             'sortKey' => $sorting['key'],
             'sortDir' => $sorting['dir'],
@@ -64,11 +72,112 @@ class MovementsController extends Controller
         ]);
     }
 
-    public function save($id = null): void
+public function save($id = null): void
+{
+    $this->checkAccess('save');
+
+    if (!$this->isPost()) {
+        $this->redirect('movements');
+        return;
+    }
+
+    $config = new ConfigModel($this->db);
+    $data = $this->getFormData();
+
+    if (!empty($data['movement_date']) && $config->isDateClosed($data['movement_date'])) {
+        $this->respondWith(false, 'Дата потрапляє в закритий період (по ' . date('d.m.Y', strtotime($config->getClosedDate())) . ')');
+        return;
+    }
+
+    if ($id) {
+        $existing = $this->model->getById((int)$id);
+        if ($existing && !empty($existing['resource_log_id'])) {
+            $this->respondWith(false, 'Автоматичний запис — редагуйте через Витрату ресурсів');
+            return;
+        }
+        if ($existing && $config->isDateClosed($existing['movement_date'])) {
+            $this->respondWith(false, 'Цей запис знаходиться в закритому періоді і не може бути змінений');
+            return;
+        }
+    }
+
+    $error = $this->validateData($data);
+    if ($error) {
+        $this->respondWith(false, $error);
+        return;
+    }
+
+    // Перевірка доступу до складів
+    $allowedWarehouses = $this->getPermManager()->getAllowedWarehouses(NC_USER);
+    if ($allowedWarehouses !== null && !empty($allowedWarehouses)) {
+        $fromId = $data['warehouse_from_id'];
+        $toId = $data['warehouse_to_id'];
+        
+        if (count($allowedWarehouses) == 1) {
+            $allowedId = $allowedWarehouses[0];
+            
+            if ($fromId && $toId) {
+                // Переміщення між складами
+                if ($fromId != $allowedId && $toId != $allowedId) {
+                    $this->respondWith(false, 'Немає доступу до складів');
+                    return;
+                }
+            } elseif ($fromId && !$toId) {
+                // Списання
+                if ($fromId != $allowedId) {
+                    $this->respondWith(false, 'Немає доступу до складу списання');
+                    return;
+                }
+            } elseif (!$fromId && $toId) {
+                // Прихід ззовні
+                if ($toId != $allowedId) {
+                    $this->respondWith(false, 'Немає доступу до складу призначення');
+                    return;
+                }
+            }
+        } else {
+            // Декілька складів
+            if (!$fromId && $toId) {
+                // Прихід ззовні
+                if (!in_array($toId, $allowedWarehouses)) {
+                    $this->respondWith(false, 'Немає доступу до складу призначення');
+                    return;
+                }
+            } elseif ($fromId && !$toId) {
+                // Списання
+                if (!in_array($fromId, $allowedWarehouses)) {
+                    $this->respondWith(false, 'Немає доступу до складу списання');
+                    return;
+                }
+            } elseif ($fromId && $toId) {
+                // Переміщення між складами
+                if (!in_array($fromId, $allowedWarehouses) || !in_array($toId, $allowedWarehouses)) {
+                    $this->respondWith(false, 'Немає доступу до одного з складів');
+                    return;
+                }
+            }
+        }
+    }
+
+    try {
+        if ($id) {
+            $this->model->update((int)$id, $data);
+            $message = 'Рух оновлено';
+        } else {
+            $id = $this->model->create($data);
+            $message = 'Рух додано';
+        }
+        $this->respondWith(true, $message, ['id' => $id]);
+    } catch (Exception $e) {
+        $this->respondWith(false, 'Помилка збереження: ' . $e->getMessage());
+    }
+}
+
+
+
+    public function save_old($id = null): void
     {
-
         $this->checkAccess('save');
-
 
         if (!$this->isPost()) {
             $this->redirect('movements');
@@ -101,6 +210,35 @@ class MovementsController extends Controller
             return;
         }
 
+        // Перевірка доступу до складів
+        $allowedWarehouses = $this->getPermManager()->getAllowedWarehouses(NC_USER);
+        if ($allowedWarehouses !== null && !empty($allowedWarehouses)) {
+            $fromId = $data['warehouse_from_id'];
+            $toId = $data['warehouse_to_id'];
+            
+            // Прихід ззовні
+            if (!$fromId && $toId) {
+                if (!in_array($toId, $allowedWarehouses)) {
+                    $this->respondWith(false, 'Немає доступу до складу призначення');
+                    return;
+                }
+            }
+            // Списання
+            elseif ($fromId && !$toId) {
+                if (!in_array($fromId, $allowedWarehouses)) {
+                    $this->respondWith(false, 'Немає доступу до складу списання');
+                    return;
+                }
+            }
+            // Переміщення між складами
+            elseif ($fromId && $toId) {
+                if (!in_array($fromId, $allowedWarehouses) || !in_array($toId, $allowedWarehouses)) {
+                    $this->respondWith(false, 'Немає доступу до одного з складів');
+                    return;
+                }
+            }
+        }
+
         try {
             if ($id) {
                 $this->model->update((int)$id, $data);
@@ -117,7 +255,6 @@ class MovementsController extends Controller
 
     public function delete($id): void
     {
-
         $this->checkAccess('delete');
 
         $existing = $this->model->getById((int)$id);
@@ -142,7 +279,6 @@ class MovementsController extends Controller
 
     public function getone($id = null): void
     {
-
         $this->checkAccess('getone');
         
         if (!$id) {
@@ -180,34 +316,28 @@ class MovementsController extends Controller
         return ['key' => $sortKey, 'dir' => $sortDir, 'orderBy' => $orderBy];
     }
 
-/**
- * Отримати історію змін для AJAX
- */
-public function history($id = null): void
-{
+    public function history($id = null): void
+    {
+        $this->checkAccess('history');
 
-    $this->checkAccess('history');
-
-    if (!$id) {
-        $this->json(['success' => false, 'error' => 'ID не вказано']);
-        return;
-    }
-    
-    $history = $this->model->getHistory((int)$id);
-    
-    // Форматуємо дати
-    foreach ($history as &$item) {
-        $item['changed_at_formatted'] = date('d.m.Y H:i:s', strtotime($item['changed_at']));
-        if ($item['action'] === 'UPDATE') {
-            $item['action_text'] = 'Редагування';
-        } elseif ($item['action'] === 'DELETE') {
-            $item['action_text'] = 'Видалення';
-        } else {
-            $item['action_text'] = $item['action'];
+        if (!$id) {
+            $this->json(['success' => false, 'error' => 'ID не вказано']);
+            return;
         }
+        
+        $history = $this->model->getHistory((int)$id);
+        
+        foreach ($history as &$item) {
+            $item['changed_at_formatted'] = date('d.m.Y H:i:s', strtotime($item['changed_at']));
+            if ($item['action'] === 'UPDATE') {
+                $item['action_text'] = 'Редагування';
+            } elseif ($item['action'] === 'DELETE') {
+                $item['action_text'] = 'Видалення';
+            } else {
+                $item['action_text'] = $item['action'];
+            }
+        }
+        
+        $this->json(['success' => true, 'history' => $history]);
     }
-    
-    $this->json(['success' => true, 'history' => $history]);
-}
-
 }
