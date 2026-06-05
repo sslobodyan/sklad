@@ -12,8 +12,6 @@ class SettingsController extends Controller
 
     public function dates(): void
     {
-        $this->checkAccess('dates');
-        
         if ($this->isPost()) {
             $dateFrom = $this->post('date_from');
             $dateTo = $this->post('date_to');
@@ -30,10 +28,8 @@ class SettingsController extends Controller
         $this->redirect('/');
     }
 
-    public function preset($type): void
+    public function preset($type):void
     {
-        $this->checkAccess('preset');
-        
         $dateFrom = '';
         $dateTo = '';
         
@@ -72,7 +68,7 @@ class SettingsController extends Controller
         $expire = time() + 365 * 86400;
         $path = BASE_PATH . '/';
         $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-        
+
         setcookie('sklad_date_from', $from, [
             'expires' => $expire,
             'path' => $path,
@@ -80,6 +76,7 @@ class SettingsController extends Controller
             'httponly' => true,
             'samesite' => 'None',
         ]);
+
         setcookie('sklad_date_to', $to, [
             'expires' => $expire,
             'path' => $path,

@@ -136,22 +136,6 @@ if ($controllerName === 'ResourcesController' && $action === 'export') {
     $id = null;
 }
 
-// Reports: resource/export
-if ($controllerName === 'ReportsController' && $action === 'resource' && $id === 'export') {
-    $controllerName = 'ResourceUsageExportController';
-    $action = 'export';
-    $id = null;
-}
-
-error_log("=== ROUTING ===");
-error_log("route: " . $route);
-error_log("parts: " . print_r($parts, true));
-error_log("controllerName: " . $controllerName);
-error_log("action: " . $action);
-error_log("id: " . $id);
-error_log("controllerFile: " . $controllerFile);
-
-
 // =============================================
 // Перевірка існування контролера
 // =============================================
@@ -163,16 +147,28 @@ if (!file_exists($controllerFile)) {
 }
 
 // =============================================
-// Перевірка доступу
+// Визначення назви контролера для перевірки доступу
 // =============================================
-// Беремо тільки перший сегмент URL як назву контролера для перевірки
-$controllerForAccess = $parts[0] ?? '';
-
-if (empty($controllerForAccess)) {
-    $controllerForAccess = 'dashboard';
+// Беремо тільки перший сегмент URL як базову назву
+$baseController = $parts[0] ?? '';
+if (empty($baseController)) {
+    $baseController = 'dashboard';
 }
 
-if (!PermissionManager::getInstance($db)->canAccess(NC_USER, $controllerForAccess, $action)) {
+// Перевіряємо чи існує пункт меню для цього контролера
+$menuItem = $db->query("SELECT id FROM menu_items WHERE controller = ?", [$baseController])->fetch();
+
+if (!$menuItem) {
+    // Немає пункту меню - значить публічний маршрут, пропускаємо перевірку
+    $skipAccessCheck = true;
+} else {
+    $skipAccessCheck = false;
+}
+
+// =============================================
+// Перевірка доступу
+// =============================================
+if (!$skipAccessCheck && !PermissionManager::getInstance($db)->canAccess(NC_USER, $baseController, $action)) {
     if (PermissionManager::isAjax()) {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
