@@ -27,7 +27,6 @@ class AdminMenuController extends Controller
 
 public function save(): void
 {
-    $this->checkAdmin();
     $this->checkAccess('save');
     
     if (!$this->isPost()) {
@@ -147,7 +146,6 @@ public function save(): void
 
 public function addGroup(): void
 {
-    $this->checkAdmin();
     $this->checkAccess('addGroup');
     
     if (!$this->isPost()) {
