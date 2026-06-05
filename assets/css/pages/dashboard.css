@@ -294,3 +294,10 @@
     background: #f8f9fb;
     z-index: 10;
 }
+
+.stats-grid a.stat-card {
+    text-decoration: none;
+    display: block;
+    cursor: pointer;
+}
+

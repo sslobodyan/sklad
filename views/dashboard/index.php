@@ -41,31 +41,31 @@
 
 <!-- Статистика -->
 <div class="stats-grid">
-    <div class="stat-card">
+    <a href="<?= $basePath ?>/warehouses" class="stat-card">
         <div class="stat-icon"><?= $warehouseIcon ?? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' ?></div>
         <div class="stat-value"><?= $stats['warehouses'] ?></div>
         <div class="stat-label">Складів</div>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a href="<?= $basePath ?>/materials" class="stat-card">
         <div class="stat-icon"><?= $materialIcon ?? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>' ?></div>
         <div class="stat-value"><?= $stats['materials'] ?></div>
         <div class="stat-label">Матеріалів</div>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a href="<?= $basePath ?>/resourceTypes" class="stat-card">
         <div class="stat-icon"><?= $resourceTypeIcon ?? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>' ?></div>
         <div class="stat-value"><?= $stats['resource_types'] ?></div>
         <div class="stat-label">Типів ресурсів</div>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a href="<?= $basePath ?>/movements" class="stat-card">
         <div class="stat-icon"><?= $movementIcon ?? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg>' ?></div>
         <div class="stat-value"><?= $stats['movements_today'] ?></div>
         <div class="stat-label">Переміщень сьогодні</div>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a href="<?= $basePath ?>/resources" class="stat-card">
         <div class="stat-icon"><?= $resourceLogIcon ?? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' ?></div>
         <div class="stat-value"><?= $stats['resource_logs_today'] ?></div>
         <div class="stat-label">Списань сьогодні</div>
-    </div>
+    </a>
 </div>
 
 <!-- Останні рухи -->
