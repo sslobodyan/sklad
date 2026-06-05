@@ -25,6 +25,16 @@ class MaterialModel extends Model
         );
     }
 
+    public function getAll(string $orderBy = 'name ASC', ?array $allowedIds = null): array
+    {
+        if ($allowedIds !== null && !empty($allowedIds)) {
+            $placeholders = implode(',', array_fill(0, count($allowedIds), '?'));
+            $sql = "SELECT * FROM {$this->table} WHERE id IN ($placeholders) ORDER BY {$orderBy}";
+            return $this->db->query($sql, $allowedIds)->fetchAll();
+        }
+        return $this->db->query("SELECT * FROM {$this->table} ORDER BY {$orderBy}")->fetchAll();
+    }
+
     public function isUsed(int $id): bool
     {
         $result = $this->db->query(
@@ -34,19 +44,6 @@ class MaterialModel extends Model
         return $result['cnt'] > 0;
     }
 
-public function getAll(string $orderBy = 'name ASC', ?array $allowedIds = null): array
-{
-    if ($allowedIds !== null && !empty($allowedIds)) {
-        $placeholders = implode(',', array_fill(0, count($allowedIds), '?'));
-        $sql = "SELECT * FROM {$this->table} WHERE id IN ($placeholders) ORDER BY {$orderBy}";
-        return $this->db->query($sql, $allowedIds)->fetchAll();
-    }
-    return $this->db->query("SELECT * FROM {$this->table} ORDER BY {$orderBy}")->fetchAll();
-}
-
-    /**
-     * Отримати всі ID матеріалів, що використовуються в русі
-     */
     public function getUsedIds(): array
     {
         $rows = $this->db->query(
@@ -55,9 +52,6 @@ public function getAll(string $orderBy = 'name ASC', ?array $allowedIds = null):
         return array_column($rows, 'id');
     }
 
-    /**
-     * Знайти або створити матеріал за назвою
-     */
     public function findOrCreate(string $name): int
     {
         $name = trim($name);

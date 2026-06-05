@@ -9,6 +9,15 @@ class ResourceTypesModel extends Model
         parent::__construct($db);
     }
 
+    public function getTypes(?array $allowedIds = null): array
+    {
+        if ($allowedIds !== null && !empty($allowedIds)) {
+            $placeholders = implode(',', array_fill(0, count($allowedIds), '?'));
+            $sql = "SELECT * FROM resource_types WHERE id IN ($placeholders) ORDER BY name";
+            return $this->db->query($sql, $allowedIds)->fetchAll();
+        }
+        return $this->db->query("SELECT * FROM resource_types ORDER BY name")->fetchAll();
+    }
 
     public function getTypeById(int $id): ?array
     {
@@ -16,35 +25,23 @@ class ResourceTypesModel extends Model
         return $r ?: null;
     }
 
-public function createType(string $name, string $unit, string $format = 'int', int $showHours = 0): int
-{
-    $this->db->query(
-        "INSERT INTO resource_types (name, unit, format, show_hours, author) VALUES (?, ?, ?, ?, ?)",
-        [trim($name), trim($unit), $format, $showHours, $this->authorStamp()]
-    );
-    return $this->db->lastInsertId();
-}
-
-public function updateType(int $id, string $name, string $unit, string $format = 'int', int $showHours = 0): void
-{
-
-    $this->setCurrentUser();
-    $this->db->query(
-        "UPDATE resource_types SET name = ?, unit = ?, format = ?, show_hours = ?, author = ? WHERE id = ?",
-        [trim($name), trim($unit), $format, $showHours, $this->authorStamp(), $id]
-    );
-}
-
-// new
-public function getTypes(?array $allowedIds = null): array
-{
-    if ($allowedIds !== null && !empty($allowedIds)) {
-        $placeholders = implode(',', array_fill(0, count($allowedIds), '?'));
-        $sql = "SELECT * FROM resource_types WHERE id IN ($placeholders) ORDER BY name";
-        return $this->db->query($sql, $allowedIds)->fetchAll();
+    public function createType(string $name, string $unit, string $format = 'int', int $showHours = 0): int
+    {
+        $this->db->query(
+            "INSERT INTO resource_types (name, unit, format, show_hours, author) VALUES (?, ?, ?, ?, ?)",
+            [trim($name), trim($unit), $format, $showHours, $this->authorStamp()]
+        );
+        return $this->db->lastInsertId();
     }
-    return $this->db->query("SELECT * FROM resource_types ORDER BY name")->fetchAll();
-}
+
+    public function updateType(int $id, string $name, string $unit, string $format = 'int', int $showHours = 0): void
+    {
+        $this->setCurrentUser();
+        $this->db->query(
+            "UPDATE resource_types SET name = ?, unit = ?, format = ?, show_hours = ?, author = ? WHERE id = ?",
+            [trim($name), trim($unit), $format, $showHours, $this->authorStamp(), $id]
+        );
+    }
 
     public function deleteType(int $id): bool
     {

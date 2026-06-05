@@ -103,9 +103,6 @@ class ResourceRatesModel extends Model
         return $this->db->query($sql, $params)->fetchAll();
     }
 
-    /**
-     * Отримати склади, що мають норми для вказаного типу ресурсу
-     */
     public function getWarehousesByResourceType(int $resourceTypeId): array
     {
         $result = $this->db->query(
@@ -120,9 +117,6 @@ class ResourceRatesModel extends Model
         return $result;
     }
 
-    /**
-     * Отримати матеріали, що використовуються в нормах для вказаного типу ресурсу
-     */
     public function getMaterialsByResourceType(int $resourceTypeId): array
     {
         return $this->db->query(

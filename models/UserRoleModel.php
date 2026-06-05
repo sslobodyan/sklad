@@ -147,27 +147,6 @@ public function syncFromSession(): void
     }
 }
 
-    public function syncFromSession_old(): void
-    {
-        $ncUser = $_SESSION['nc_user'] ?? null;
-        if (!$ncUser) {
-            return;
-        }
-        
-        $existing = $this->getUser($ncUser);
-        if (!$existing) {
-            $this->createOrUpdate($ncUser, [
-                'role' => 'viewer',
-                'allowed_warehouses' => null,
-                'allowed_materials' => null,
-                'allowed_resource_types' => null,
-                'can_edit_rates' => false,
-                'can_export' => true,
-                'can_import' => false
-            ]);
-        }
-    }
-
     public function getUsersByRole(string $role): array
     {
         return $this->db->query(

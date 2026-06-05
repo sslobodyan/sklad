@@ -69,6 +69,7 @@
 </div>
 
 <!-- Останні рухи -->
+<span class="table-last-head">Останні переміщення по складам:</span>
 <div class="card card-stretch">
     <div class="table-scroll">
         <table class="data-table">
