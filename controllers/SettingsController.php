@@ -28,40 +28,58 @@ class SettingsController extends Controller
         $this->redirect('/');
     }
 
-    public function preset($type):void
-    {
-        $dateFrom = '';
-        $dateTo = '';
-        
-        switch ($type) {
-            case 'current-month':
-                $dateFrom = date('Y-m-01');
-                $dateTo = date('Y-m-t');
-                break;
-            case 'last-month':
-                $dateFrom = date('Y-m-01', strtotime('-1 month'));
-                $dateTo = date('Y-m-t', strtotime('-1 month'));
-                break;
-            case 'today':
-                $dateFrom = date('Y-m-d');
-                $dateTo = date('Y-m-d');
-                break;
-            case 'current-year':
-                $year = date('Y');
-                $dateFrom = $year . '-01-01';
-                $dateTo = $year . '-12-31';
-                break;
-            default:
-                $this->redirect('/');
-                return;
-        }
-        
-        self::saveDateRange($dateFrom, $dateTo);
-        
-        $referer = $_SERVER['HTTP_REFERER'] ?? BASE_PATH . '/';
-        header('Location: ' . $referer);
-        exit;
+
+public function preset($type): void
+{
+    // Отримуємо поточний URL з GET параметра
+    $returnUrl = $_GET['return'] ?? '';
+    
+    // Встановлюємо нові дати
+    $dateFrom = '';
+    $dateTo = '';
+    
+    switch ($type) {
+        case 'current-month':
+            $dateFrom = date('Y-m-01');
+            $dateTo = date('Y-m-t');
+            break;
+        case 'last-month':
+            $dateFrom = date('Y-m-01', strtotime('-1 month'));
+            $dateTo = date('Y-m-t', strtotime('-1 month'));
+            break;
+        case 'today':
+            $dateFrom = date('Y-m-d');
+            $dateTo = date('Y-m-d');
+            break;
+        case 'current-year':
+            $year = date('Y');
+            $dateFrom = $year . '-01-01';
+            $dateTo = $year . '-12-31';
+            break;
+        default:
+            $this->redirect('/');
+            return;
     }
+    
+    self::saveDateRange($dateFrom, $dateTo);
+    
+    // Оновлюємо дати в return URL, якщо він є
+    if (!empty($returnUrl)) {
+        $parsedUrl = parse_url($returnUrl);
+        $query = [];
+        if (isset($parsedUrl['query'])) {
+            parse_str($parsedUrl['query'], $query);
+        }
+        $query['date_from'] = $dateFrom;
+        $query['date_to'] = $dateTo;
+        $newQuery = http_build_query($query);
+        $newUrl = $parsedUrl['path'] . '?' . $newQuery;
+        header('Location: ' . $newUrl);
+    } else {
+        header('Location: ' . BASE_PATH . '/movements');
+    }
+    exit;
+}
 
     public static function saveDateRange(string $from, string $to): void
     {

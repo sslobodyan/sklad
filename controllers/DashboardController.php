@@ -1,34 +1,23 @@
 <?php
-/**
- * Контролер сторінки привітання (Dashboard)
- */
 
 class DashboardController extends Controller
 {
-    use AuthorizeTrait;
-
     public function index(): void
     {
-
-        $this->checkAccess('index');
-
-        // Отримуємо дані користувача з сесії
         $username = $_SESSION['nc_user'] ?? '';
         $displayName = $_SESSION['nc_display_name'] ?? '';
         $groups = $_SESSION['nc_groups'] ?? [];
         $isAdmin = in_array('admin', $groups);
         
-        // Перевіряємо чи сесія валідна (користувач авторизований)
         $sessionValid = !empty($username);
         
-        // Останній вхід (зберігаємо в сесії)
         if ($sessionValid && empty($_SESSION['last_login'])) {
             $_SESSION['last_login'] = date('Y-m-d H:i:s');
         }
         $lastLogin = $_SESSION['last_login'] ?? null;
         
-        // Статистика для дашборду
         $stats = $this->getDashboardStats();
+        $icons = $this->getMenuIcons();
         
         $this->render('dashboard/index', [
             'title' => 'Головна',
@@ -39,26 +28,25 @@ class DashboardController extends Controller
             'sessionValid' => $sessionValid,
             'lastLogin' => $lastLogin,
             'stats' => $stats,
+            'warehouseIcon' => $icons['warehouses'] ?? null,
+            'materialIcon' => $icons['materials'] ?? null,
+            'resourceTypeIcon' => $icons['resourcetypes'] ?? null,
+            'movementIcon' => $icons['movements'] ?? null,
+            'resourceLogIcon' => $icons['resources'] ?? null,
             'activePage' => 'dashboard',
         ]);
     }
     
-    /**
-     * Отримати статистику для дашборду
-     */
     private function getDashboardStats(): array
     {
         $stats = [];
         
-        // Кількість складів
         $warehouseModel = new WarehouseModel($this->db);
         $stats['warehouses'] = $warehouseModel->count();
         
-        // Кількість матеріалів
         $materialModel = new MaterialModel($this->db);
         $stats['materials'] = $materialModel->count();
         
-        // Рухи за сьогодні
         $today = date('Y-m-d');
         $movementModel = new MovementModel($this->db);
         $movementsToday = $this->db->query(
@@ -67,16 +55,17 @@ class DashboardController extends Controller
         )->fetch();
         $stats['movements_today'] = (int)($movementsToday['cnt'] ?? 0);
         
-        // Рухи за поточний місяць
-        $monthStart = date('Y-m-01');
-        $monthEnd = date('Y-m-t');
-        $movementsMonth = $this->db->query(
-            "SELECT COUNT(*) as cnt FROM movements WHERE movement_date BETWEEN ? AND ?",
-            [$monthStart, $monthEnd]
+        $resourceTypes = $this->db->query(
+            "SELECT COUNT(*) as cnt FROM resource_types"
         )->fetch();
-        $stats['movements_month'] = (int)($movementsMonth['cnt'] ?? 0);
+        $stats['resource_types'] = (int)($resourceTypes['cnt'] ?? 0);
         
-        // Останні 5 рухів
+        $resourceLogsToday = $this->db->query(
+            "SELECT COUNT(*) as cnt FROM resource_logs WHERE log_date = ? AND delta IS NOT NULL",
+            [$today]
+        )->fetch();
+        $stats['resource_logs_today'] = (int)($resourceLogsToday['cnt'] ?? 0);
+        
         $lastMovements = $this->db->query(
             "SELECT m.*, 
                     wf.name AS warehouse_from_name,
@@ -91,17 +80,24 @@ class DashboardController extends Controller
         )->fetchAll();
         $stats['last_movements'] = $lastMovements;
         
-        // Типи ресурсів
-        $resourceTypes = $this->db->query(
-            "SELECT COUNT(*) as cnt FROM resource_types"
-        )->fetch();
-        $stats['resource_types'] = (int)($resourceTypes['cnt'] ?? 0);
-
-        $stats['resource_logs_today'] = (int)($this->db->query(
-            "SELECT COUNT(*) as cnt FROM resource_logs WHERE log_date = ? AND delta IS NOT NULL",
-            [$today]
-        )->fetch()['cnt'] ?? 0);
-        
         return $stats;
+    }
+    
+    private function getMenuIcons(): array
+    {
+        $icons = [];
+        $controllers = ['warehouses', 'materials', 'resourcetypes', 'movements', 'resources'];
+        
+        foreach ($controllers as $ctrl) {
+            $item = $this->db->query(
+                "SELECT icon_svg FROM menu_items WHERE controller = ?",
+                [$ctrl]
+            )->fetch();
+            if ($item && !empty($item['icon_svg'])) {
+                $icons[$ctrl] = $item['icon_svg'];
+            }
+        }
+        
+        return $icons;
     }
 }

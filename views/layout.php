@@ -160,10 +160,10 @@
                 </div>
 
                 <div class="dp-presets">
-                    <a href="<?= $basePath ?>/settings/preset/current-month" class="dp-preset-btn">Поточний місяць</a>
-                    <a href="<?= $basePath ?>/settings/preset/last-month" class="dp-preset-btn">Минулий місяць</a>
-                    <a href="<?= $basePath ?>/settings/preset/today" class="dp-preset-btn">Сьогодні</a>
-                    <a href="<?= $basePath ?>/settings/preset/current-year" class="dp-preset-btn">Поточний рік</a>
+                    <a href="<?= $basePath ?>/settings/preset/current-month?return=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="dp-preset-btn">Поточний місяць</a>
+                    <a href="<?= $basePath ?>/settings/preset/last-month?return=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="dp-preset-btn">Минулий місяць</a>
+                    <a href="<?= $basePath ?>/settings/preset/today?return=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="dp-preset-btn">Сьогодні</a>
+                    <a href="<?= $basePath ?>/settings/preset/current-year?return=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="dp-preset-btn">Поточний рік</a>
                 </div>
 
                 <button class="dp-btn" onclick="applyDateRange()">Застосувати</button>

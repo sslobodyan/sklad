@@ -29,7 +29,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+    background: #006da5;
     color: white;
     padding: 24px 32px;
     border-radius: 20px;
@@ -78,7 +78,7 @@
 }
 
 .welcome-details .badge-info {
-    background: #00bcd4;
+    background: #338ab7;
     color: white;
 }
 
@@ -261,4 +261,36 @@
     .recent-movements .note-cell {
         max-width: 120px;
     }
+}
+
+/* Fix для прокрутки таблиці останніх записів */
+.recent-movements {
+    display: flex;
+    flex-direction: column;
+    max-height: 500px;
+}
+
+.recent-movements .table-scroll {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.recent-movements .data-table thead th {
+    position: sticky;
+    top: 0;
+    background: #f8f9fb;
+    z-index: 10;
+}
+/* Fix для прокрутки таблиці останніх записів */
+.recent-movements .table-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.recent-movements .data-table thead th {
+    position: sticky;
+    top: 0;
+    background: #f8f9fb;
+    z-index: 10;
 }
