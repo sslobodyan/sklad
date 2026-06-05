@@ -9,10 +9,6 @@ class ResourceTypesModel extends Model
         parent::__construct($db);
     }
 
-    public function getTypes(): array
-    {
-        return $this->db->query("SELECT * FROM resource_types ORDER BY name")->fetchAll();
-    }
 
     public function getTypeById(int $id): ?array
     {
@@ -37,6 +33,17 @@ public function updateType(int $id, string $name, string $unit, string $format =
         "UPDATE resource_types SET name = ?, unit = ?, format = ?, show_hours = ?, author = ? WHERE id = ?",
         [trim($name), trim($unit), $format, $showHours, $this->authorStamp(), $id]
     );
+}
+
+// new
+public function getTypes(?array $allowedIds = null): array
+{
+    if ($allowedIds !== null && !empty($allowedIds)) {
+        $placeholders = implode(',', array_fill(0, count($allowedIds), '?'));
+        $sql = "SELECT * FROM resource_types WHERE id IN ($placeholders) ORDER BY name";
+        return $this->db->query($sql, $allowedIds)->fetchAll();
+    }
+    return $this->db->query("SELECT * FROM resource_types ORDER BY name")->fetchAll();
 }
 
     public function deleteType(int $id): bool

@@ -34,6 +34,16 @@ class MaterialModel extends Model
         return $result['cnt'] > 0;
     }
 
+public function getAll(string $orderBy = 'name ASC', ?array $allowedIds = null): array
+{
+    if ($allowedIds !== null && !empty($allowedIds)) {
+        $placeholders = implode(',', array_fill(0, count($allowedIds), '?'));
+        $sql = "SELECT * FROM {$this->table} WHERE id IN ($placeholders) ORDER BY {$orderBy}";
+        return $this->db->query($sql, $allowedIds)->fetchAll();
+    }
+    return $this->db->query("SELECT * FROM {$this->table} ORDER BY {$orderBy}")->fetchAll();
+}
+
     /**
      * Отримати всі ID матеріалів, що використовуються в русі
      */
