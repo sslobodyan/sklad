@@ -77,7 +77,54 @@ public function setUserPermissions(string $ncUser, array $permissions): bool
         return $this->setUserPermissions($ncUser, $defaultPermissions);
     }
 
-    public function getDefaultForRole(string $role): array
+public function getDefaultForRole(string $role): array
+{
+    $menuModel = new MenuModel($this->db);
+    $allItems = $menuModel->getAllItems();
+    
+    $permissions = [];
+    
+    foreach ($allItems as $item) {
+        $controller = $item['controller'];
+        
+        if ($controller === null) {
+            continue;
+        }
+        
+        switch ($role) {
+            case 'manager':
+                if ($controller === 'adminUsers' || $controller === 'adminMenu' || $controller === 'adminPermissions' || $controller === 'adminBackup' || $controller === 'adminRestore') {
+                    $permissions[$item['id']] = 'none';
+                } else {
+                    $permissions[$item['id']] = 'edit';
+                }
+                break;
+                
+            case 'viewer':
+                if (in_array($controller, ['dashboard', 'movements', 'resources', 'reportWarehouse', 'reportMaterial', 'reportResource'])) {
+                    $permissions[$item['id']] = 'view';
+                } else {
+                    $permissions[$item['id']] = 'none';
+                }
+                break;
+                
+            case 'fuel':
+                if ($controller === 'simple') {
+                    $permissions[$item['id']] = 'edit';
+                } else {
+                    $permissions[$item['id']] = 'none';
+                }
+                break;
+                
+            default:
+                $permissions[$item['id']] = 'none';
+        }
+    }
+    
+    return $permissions;
+}
+
+    public function getDefaultForRole_old(string $role): array
     {
         $menuModel = new MenuModel($this->db);
         $allItems = $menuModel->getAllItems();

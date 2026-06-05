@@ -1,12 +1,9 @@
 <?php
-/**
- * Контролер матеріалів
- */
 
 class MaterialsController extends Controller
 {
     use AuthorizeTrait;
-
+    
     private MaterialModel $model;
 
     public function __construct(Database $db)
@@ -17,10 +14,10 @@ class MaterialsController extends Controller
 
     public function index(): void
     {
-
         $this->checkAccess('index');
-
-        $materials = $this->model->getAll('name ASC');
+        
+        $allowedMaterials = $this->getPermManager()->getAllowedMaterials(NC_USER);
+        $materials = $this->model->getAll('name ASC', $allowedMaterials);
         $usedIds = $this->model->getUsedIds();
         
         $this->render('materials/index', [
@@ -31,14 +28,10 @@ class MaterialsController extends Controller
         ]);
     }
 
-    /**
-     * Збереження (AJAX)
-     */
     public function save($id = null): void
     {
-
         $this->checkAccess('save');
-
+        
         if (!$this->isPost()) {
             $this->redirect('materials');
             return;
@@ -73,9 +66,8 @@ class MaterialsController extends Controller
 
     public function delete($id): void
     {
-
         $this->checkAccess('delete');
-
+        
         if ($this->model->isUsed((int)$id)) {
             $this->flash('error', 'Неможливо видалити: матеріал використовується в документах');
         } else {
@@ -83,6 +75,31 @@ class MaterialsController extends Controller
             $this->flash('success', 'Матеріал видалено');
         }
         $this->redirect('materials');
+    }
+
+    public function getone($id = null): void
+    {
+        $this->checkAccess('getone');
+        
+        if (!$id) {
+            $this->json(['success' => false, 'error' => 'ID не вказано']);
+            return;
+        }
+        $item = $this->model->getById((int)$id);
+        if (!$item) {
+            $this->json(['success' => false, 'error' => 'Не знайдено']);
+            return;
+        }
+        $this->json([
+            'success' => true, 
+            'data' => [
+                'id' => $item['id'],
+                'name' => $item['name'],
+                'author' => $item['author'] ?? '',
+                'created_at' => $item['created_at'] ?? null,
+                'updated_at' => $item['updated_at'] ?? null
+            ]
+        ]);
     }
 
     private function jsonResponse(bool $success, string $message): void
@@ -100,32 +117,4 @@ class MaterialsController extends Controller
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
-
-public function getone($id = null): void
-{
-
-    $this->checkAccess('getone');
-
-    if (!$id) {
-        $this->json(['success' => false, 'error' => 'ID не вказано']);
-        return;
-    }
-    $item = $this->model->getById((int)$id);
-    if (!$item) {
-        $this->json(['success' => false, 'error' => 'Не знайдено']);
-        return;
-    }
-    $this->json([
-        'success' => true, 
-        'data' => [
-            'id' => $item['id'],
-            'name' => $item['name'],
-            'author' => $item['author'] ?? '',
-            'created_at' => $item['created_at'] ?? null,
-            'updated_at' => $item['updated_at'] ?? null
-        ]
-    ]);
-}
-
-
 }

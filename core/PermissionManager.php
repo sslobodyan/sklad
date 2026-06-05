@@ -254,4 +254,31 @@ class PermissionManager
             $this->getUserRoleModel()->syncFromSession();
         }
     }
+public function getAllowedMaterials(string $ncUser): ?array
+{
+    if ($this->isAdminFromSession()) {
+        return null;
+    }
+    
+    $user = $this->getUserRoleModel()->getUser($ncUser);
+    if (!$user) {
+        return [];
+    }
+    
+    return $user['allowed_materials'];
+}
+
+public function getAllowedResourceTypes(string $ncUser): ?array
+{
+    if ($this->isAdminFromSession()) {
+        return null;
+    }
+    
+    $user = $this->getUserRoleModel()->getUser($ncUser);
+    if (!$user) {
+        return [];
+    }
+    
+    return $user['allowed_resource_types'];
+}
 }

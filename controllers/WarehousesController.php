@@ -1,12 +1,9 @@
 <?php
-/**
- * Контролер складів
- */
 
 class WarehousesController extends Controller
 {
     use AuthorizeTrait;
-
+    
     private WarehouseModel $model;
 
     public function __construct(Database $db)
@@ -18,8 +15,9 @@ class WarehousesController extends Controller
     public function index(): void
     {
         $this->checkAccess('index');
-
-        $warehouses = $this->model->getAll('name ASC');
+        
+        $allowedWarehouses = $this->getPermManager()->getAllowedWarehouses(NC_USER);
+        $warehouses = $this->model->getAll('name ASC', $allowedWarehouses);
         $usedIds = $this->model->getUsedIds();
         
         $this->render('warehouses/index', [
@@ -30,14 +28,10 @@ class WarehousesController extends Controller
         ]);
     }
 
-    /**
-     * Збереження (AJAX)
-     */
     public function save($id = null): void
     {
-        
         $this->checkAccess('save');
-
+        
         if (!$this->isPost()) {
             $this->redirect('warehouses');
             return;
@@ -73,7 +67,7 @@ class WarehousesController extends Controller
     public function delete($id): void
     {
         $this->checkAccess('delete');
-
+        
         if ($this->model->isUsed((int)$id)) {
             $this->flash('error', 'Неможливо видалити: склад використовується в документах');
         } else {
@@ -81,6 +75,31 @@ class WarehousesController extends Controller
             $this->flash('success', 'Склад видалено');
         }
         $this->redirect('warehouses');
+    }
+
+    public function getone($id = null): void
+    {
+        $this->checkAccess('getone');
+        
+        if (!$id) {
+            $this->json(['success' => false, 'error' => 'ID не вказано']);
+            return;
+        }
+        $item = $this->model->getById((int)$id);
+        if (!$item) {
+            $this->json(['success' => false, 'error' => 'Не знайдено']);
+            return;
+        }
+        $this->json([
+            'success' => true, 
+            'data' => [
+                'id' => $item['id'],
+                'name' => $item['name'],
+                'author' => $item['author'] ?? '',
+                'created_at' => $item['created_at'] ?? null,
+                'updated_at' => $item['updated_at'] ?? null
+            ]
+        ]);
     }
 
     private function jsonResponse(bool $success, string $message): void
@@ -98,30 +117,4 @@ class WarehousesController extends Controller
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
-
-public function getone($id = null): void
-{
-        $this->checkAccess('getone');
-
-    if (!$id) {
-        $this->json(['success' => false, 'error' => 'ID не вказано']);
-        return;
-    }
-    $item = $this->model->getById((int)$id);
-    if (!$item) {
-        $this->json(['success' => false, 'error' => 'Не знайдено']);
-        return;
-    }
-    $this->json([
-        'success' => true, 
-        'data' => [
-            'id' => $item['id'],
-            'name' => $item['name'],
-            'author' => $item['author'] ?? '',
-            'created_at' => $item['created_at'] ?? null,
-            'updated_at' => $item['updated_at'] ?? null
-        ]
-    ]);
-}
-
 }
