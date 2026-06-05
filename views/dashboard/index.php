@@ -51,11 +51,13 @@
         <div class="stat-value"><?= $stats['materials'] ?></div>
         <div class="stat-label">Матеріалів</div>
     </a>
+<!--
     <a href="<?= $basePath ?>/resourceTypes" class="stat-card">
         <div class="stat-icon"><?= $resourceTypeIcon ?? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>' ?></div>
         <div class="stat-value"><?= $stats['resource_types'] ?></div>
         <div class="stat-label">Типів ресурсів</div>
     </a>
+-->
     <a href="<?= $basePath ?>/movements" class="stat-card">
         <div class="stat-icon"><?= $movementIcon ?? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg>' ?></div>
         <div class="stat-value"><?= $stats['movements_today'] ?></div>
@@ -69,7 +71,7 @@
 </div>
 
 <!-- Останні рухи -->
-<span class="table-last-head">Останні переміщення по складам:</span>
+<h2><span class="table-last-head">Останні переміщення:</span></h2>
 <div class="card card-stretch">
     <div class="table-scroll">
         <table class="data-table">

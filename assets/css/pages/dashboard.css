@@ -29,7 +29,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    background: #006da5;
+    background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
     color: white;
     padding: 24px 32px;
     border-radius: 20px;
@@ -78,7 +78,7 @@
 }
 
 .welcome-details .badge-info {
-    background: #338ab7;
+    background: #00bcd4;
     color: white;
 }
 
@@ -96,15 +96,15 @@
 /* Stats grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 14px;
-    margin-bottom: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
 }
 
 .stat-card {
     background: var(--surface);
-    border-radius: 16px;
-    padding: 10px;
+    border-radius: 12px;
+    padding: 12px 8px;
     text-align: center;
     border: 1px solid var(--border);
     transition: transform 0.2s, box-shadow 0.2s;
@@ -116,18 +116,18 @@
 }
 
 .stat-icon {
-    font-size: 32px;
-    margin-bottom: 12px;
+    font-size: 28px;
+    margin-bottom: 8px;
 }
 
 .stat-value {
-    font-size: 32px;
+    font-size: 24px;
     font-weight: 700;
     color: #1a237e;
 }
 
 .stat-label {
-    font-size: 13px;
+    font-size: 11px;
     color: var(--text-secondary);
     margin-top: 4px;
 }
@@ -144,18 +144,22 @@
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--blue);
+    background: #f8f9fb;
     flex-wrap: wrap;
 }
 
 .recent-movements .card-header h2 {
     margin: 0;
-    font-size: 18px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--blue);
 }
 
 .recent-movements .link {
     color: var(--blue);
     font-size: 14px;
+    font-weight: 500;
 }
 
 .recent-movements .empty-state {
@@ -245,11 +249,11 @@
     }
     
     .stat-card {
-        padding: 16px;
+        padding: 8px;
     }
     
     .stat-value {
-        font-size: 24px;
+        font-size: 20px;
     }
     
     .recent-movements .data-table th,
@@ -263,45 +267,10 @@
     }
 }
 
-/* Fix для прокрутки таблиці останніх записів */
-.recent-movements {
-    display: flex;
-    flex-direction: column;
-    max-height: 500px;
-}
-
-.recent-movements .table-scroll {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-}
-
-.recent-movements .data-table thead th {
-    position: sticky;
-    top: 0;
-    background: #f8f9fb;
-    z-index: 10;
-}
-/* Fix для прокрутки таблиці останніх записів */
-.recent-movements .table-scroll {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.recent-movements .data-table thead th {
-    position: sticky;
-    top: 0;
-    background: #f8f9fb;
-    z-index: 10;
-}
-
 .stats-grid a.stat-card {
     text-decoration: none;
-    display: block;
-    cursor: pointer;
 }
 
-.table-last-head {
-    font-weight: 14px;
-    color: #006da5;
+.stats-grid a.stat-card:hover {
+    text-decoration: none;
 }

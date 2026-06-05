@@ -76,7 +76,7 @@ class DashboardController extends Controller
              LEFT JOIN warehouses wt ON m.warehouse_to_id = wt.id
              JOIN materials mat ON m.material_id = mat.id
              ORDER BY m.id DESC
-             LIMIT 5"
+             LIMIT 10"
         )->fetchAll();
         $stats['last_movements'] = $lastMovements;
         
