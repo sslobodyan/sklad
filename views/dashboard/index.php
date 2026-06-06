@@ -37,6 +37,22 @@
         Останній вхід: <?= date('d.m.Y H:i', strtotime($lastLogin)) ?>
     </div>
     <?php endif; ?>
+
+        <button class="icon-btn" onclick="openChangePasswordModal()" title="Змінити пароль">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+        </button>
+
+        <a href="<?= $basePath ?>/logout" class="logout-btn" title="Вихід">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+        </a>
+
 </div>
 
 <!-- Статистика -->
@@ -100,4 +116,174 @@
         </table>
     </div>
     <div class="card-footer-info">Показано: <?= count($stats['last_movements']) ?> записів</div>
+
+<!-- Модальне вікно зміни пароля -->
+<div id="changePasswordModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Зміна пароля</h3>
+            <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="changePasswordForm" onsubmit="submitChangePassword(event)">
+                <div class="form-group">
+                    <label class="form-label">Поточний пароль</label>
+                    <input type="password" id="current_password" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Новий пароль</label>
+                    <input type="password" id="new_password" class="form-input" required>
+                    <div class="form-hint">Мінімум 6 символів</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Підтвердження</label>
+                    <input type="password" id="confirm_password" class="form-input" required>
+                </div>
+                <div id="passwordError" class="error-message" style="display: none; color: #c62828;"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()">Скасувати</button>
+                    <button type="submit" class="btn btn-primary">Змінити пароль</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
+
+<style>
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.icon-btn:hover {
+    background: rgba(255,255,255,0.3);
+    text-decoration: none;
+}
+
+.icon-btn svg {
+    stroke: white;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    z-index: 1000;
+    width: 400px;
+    max-width: 90%;
+}
+
+.modal-content {
+    width: 100%;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+}
+
+.error-message {
+    margin-top: 12px;
+    font-size: 13px;
+}
+</style>
+
+<script>
+function openChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'block';
+    document.getElementById('current_password').value = '';
+    document.getElementById('new_password').value = '';
+    document.getElementById('confirm_password').value = '';
+    document.getElementById('passwordError').style.display = 'none';
+}
+
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'none';
+}
+
+function submitChangePassword(event) {
+    event.preventDefault();
+    
+    const currentPassword = document.getElementById('current_password').value;
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const errorDiv = document.getElementById('passwordError');
+    
+    if (newPassword.length < 6) {
+        errorDiv.textContent = 'Новий пароль повинен містити не менше 6 символів';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        errorDiv.textContent = 'Новий пароль і підтвердження не співпадають';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    fetch(window.basePath + '/dashboard/changePassword', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: 'current_password=' + encodeURIComponent(currentPassword) + 
+              '&new_password=' + encodeURIComponent(newPassword) +
+              '&confirm_password=' + encodeURIComponent(confirmPassword)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            closeChangePasswordModal();
+        } else {
+            errorDiv.textContent = data.error;
+            errorDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        errorDiv.textContent = 'Помилка при зміні пароля';
+        errorDiv.style.display = 'block';
+    });
+}
+
+// Закриття модалки при кліку поза нею
+document.getElementById('changePasswordModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeChangePasswordModal();
+    }
+});
+</script>
+
+
+</div>
+
+

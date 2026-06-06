@@ -169,6 +169,31 @@
                             </label>
                         </td>
                     </tr>
+
+<!-- Поля для локальної авторизації -->
+<tr style="vertical-align: top;">
+    <td style="padding-top: 12px;"><label class="form-label">Локальна авторизація</label></td>
+    <td style="padding-top: 12px;">
+        <label class="form-checkbox">
+            <input type="checkbox" name="is_local" value="1" <?= isset($user) && $user['is_local'] ? 'checked' : '' ?>>
+            <span>Дозволити вхід через форму (локально)</span>
+        </label>
+    </td>
+</tr>
+<tr style="vertical-align: top;">
+    <td style="padding-top: 12px;"><label class="form-label">Пароль</label></td>
+    <td style="padding-top: 12px;">
+        <input type="password" name="password" class="form-input" style="width: 250px;" placeholder="Новий пароль (залиште порожнім, щоб не змінювати)">
+        <div class="form-hint">Заповніть тільки якщо потрібно змінити пароль</div>
+    </td>
+</tr>
+<tr style="vertical-align: top;">
+    <td style="padding-top: 12px;"><label class="form-label">Email</label></td>
+    <td style="padding-top: 12px;">
+        <input type="email" name="email" class="form-input" style="width: 250px;" value="<?= isset($user) ? htmlspecialchars($user['email'] ?? '') : '' ?>">
+    </td>
+</tr>
+
                 </tbody>
             </table>
             

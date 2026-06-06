@@ -55,7 +55,94 @@ class UserRoleModel extends Model
         return $users;
     }
 
-    public function createOrUpdate(string $ncUser, array $data): bool
+
+public function createOrUpdate(string $ncUser, array $data): bool
+{
+    $allowedWarehouses = $this->encodeJson($data['allowed_warehouses'] ?? null);
+    $allowedMaterials = $this->encodeJson($data['allowed_materials'] ?? null);
+    $allowedResourceTypes = $this->encodeJson($data['allowed_resource_types'] ?? null);
+    
+    $role = $data['role'] ?? 'viewer';
+    $displayName = $data['display_name'] ?? null;
+    $email = $data['email'] ?? null;
+    $isLocal = isset($data['is_local']) ? (int)$data['is_local'] : 0;
+    $passwordHash = $data['password_hash'] ?? null;
+    $canEditRates = isset($data['can_edit_rates']) ? (int)$data['can_edit_rates'] : 0;
+    $canExport = isset($data['can_export']) ? (int)$data['can_export'] : 1;
+    $canImport = isset($data['can_import']) ? (int)$data['can_import'] : 0;
+    
+    $existing = $this->getUser($ncUser);
+    
+    if ($existing) {
+        $updateFields = [
+            'role = ?',
+            'allowed_warehouses = ?',
+            'allowed_materials = ?',
+            'allowed_resource_types = ?',
+            'can_edit_rates = ?',
+            'can_export = ?',
+            'can_import = ?',
+            'is_local = ?',
+            'email = ?',
+            'author = ?',
+            'updated_at = NOW()'
+        ];
+        $params = [
+            $role,
+            $allowedWarehouses,
+            $allowedMaterials,
+            $allowedResourceTypes,
+            $canEditRates,
+            $canExport,
+            $canImport,
+            $isLocal,
+            $email,
+            $this->authorStamp()
+        ];
+        
+        if ($displayName !== null) {
+            $updateFields[] = 'display_name = ?';
+            $params[] = $displayName;
+        }
+        
+        if ($passwordHash !== null) {
+            $updateFields[] = 'password_hash = ?';
+            $params[] = $passwordHash;
+        }
+        
+        $params[] = $ncUser;
+        
+        $this->db->query(
+            "UPDATE user_roles SET " . implode(', ', $updateFields) . " WHERE nc_user = ?",
+            $params
+        );
+    } else {
+        $this->db->query(
+            "INSERT INTO user_roles (nc_user, display_name, email, role, allowed_warehouses, allowed_materials, allowed_resource_types, can_edit_rates, can_export, can_import, is_local, password_hash, author) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                $ncUser,
+                $displayName,
+                $email,
+                $role,
+                $allowedWarehouses,
+                $allowedMaterials,
+                $allowedResourceTypes,
+                $canEditRates,
+                $canExport,
+                $canImport,
+                $isLocal,
+                $passwordHash,
+                $this->authorStamp()
+            ]
+        );
+    }
+    
+    return true;
+}
+
+
+    public function createOrUpdate_old(string $ncUser, array $data): bool
     {
         $allowedWarehouses = $this->encodeJson($data['allowed_warehouses'] ?? null);
         $allowedMaterials = $this->encodeJson($data['allowed_materials'] ?? null);

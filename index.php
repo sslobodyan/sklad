@@ -25,8 +25,9 @@ define('ROOT_PATH', __DIR__);
 define('BASE_PATH', rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'));
 
 // =============================================
-// Авторизація через Nextcloud
+// Авторизація (Nextcloud або локальна)
 // =============================================
+
 $ncUser = $_GET['nc_user'] ?? null;
 $ncGroups = $_GET['nc_groups'] ?? null;
 $ncName = $_GET['nc_name'] ?? null;
@@ -34,6 +35,7 @@ $ncTs = $_GET['nc_ts'] ?? null;
 $ncSig = $_GET['nc_sig'] ?? null;
 
 if ($ncUser !== null && $ncSig !== null) {
+    // === Nextcloud авторизація ===
     $authConfig = [];
     $authFile = ROOT_PATH . '/config/nc_auth.php';
     if (file_exists($authFile)) {
@@ -64,8 +66,18 @@ if ($ncUser !== null && $ncSig !== null) {
             }
         }
     }
+    
+} elseif (!empty($_SESSION['nc_user'])) {
+    // === Локальна авторизація (вже залогінений) ===
+    // Нічого не робимо, сесія вже є
+    
+} else {
+    // === Немає авторизації - редирект на логін ===
+    header('Location: ' . BASE_PATH . '/login.php');
+    exit;
 }
 
+// Зберігаємо NC-дані для view (для показу імені юзера тощо)
 define('NC_USER', $_SESSION['nc_user'] ?? '');
 define('NC_DISPLAY_NAME', $_SESSION['nc_display_name'] ?? '');
 define('NC_GROUPS', $_SESSION['nc_groups'] ?? []);
@@ -92,7 +104,9 @@ try {
 }
 
 $permManager = PermissionManager::getInstance($db);
-$permManager->syncCurrentUser();
+if (!empty(NC_USER)) {
+    $permManager->syncCurrentUser();
+}
 
 // =============================================
 // Визначення маршруту
@@ -104,6 +118,13 @@ $route = trim($route, '/');
 
 if (empty($route)) {
     header('Location: ' . BASE_PATH . '/dashboard');
+    exit;
+}
+
+// Вихід з системи
+if ($route === 'logout') {
+    session_destroy();
+    header('Location: ' . BASE_PATH . '/login.php');
     exit;
 }
 
@@ -149,17 +170,14 @@ if (!file_exists($controllerFile)) {
 // =============================================
 // Визначення назви контролера для перевірки доступу
 // =============================================
-// Беремо тільки перший сегмент URL як базову назву
 $baseController = $parts[0] ?? '';
 if (empty($baseController)) {
     $baseController = 'dashboard';
 }
 
-// Перевіряємо чи існує пункт меню для цього контролера
 $menuItem = $db->query("SELECT id FROM menu_items WHERE controller = ?", [$baseController])->fetch();
 
 if (!$menuItem) {
-    // Немає пункту меню - значить публічний маршрут, пропускаємо перевірку
     $skipAccessCheck = true;
 } else {
     $skipAccessCheck = false;
@@ -168,7 +186,7 @@ if (!$menuItem) {
 // =============================================
 // Перевірка доступу
 // =============================================
-if (!$skipAccessCheck && !PermissionManager::getInstance($db)->canAccess(NC_USER, $baseController, $action)) {
+if (!empty(NC_USER) && !$skipAccessCheck && !PermissionManager::getInstance($db)->canAccess(NC_USER, $baseController, $action)) {
     if (PermissionManager::isAjax()) {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);

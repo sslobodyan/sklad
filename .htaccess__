@@ -1,0 +1,12 @@
+RewriteEngine On
+
+# Якщо файл або каталог існує — не перенаправляти
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Вибір точки входу за параметром або за замовчуванням
+# Для локальної версії використовуй /local/login
+RewriteRule ^local/(.*)$ local.php?route=$1 [QSA,L]
+
+# Для Nextcloud версії (за замовчуванням)
+RewriteRule ^(.*)$ index.php [QSA,L]

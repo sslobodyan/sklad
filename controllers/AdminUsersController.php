@@ -51,7 +51,74 @@ class AdminUsersController extends Controller
         ]);
     }
 
-    public function save(): void
+public function save(): void
+{
+    $this->checkAccess('save');
+    
+    if (!$this->isPost()) {
+        $this->redirect('adminUsers');
+        return;
+    }
+    
+    $userId = (int)$this->post('user_id');
+    $ncUser = $this->post('nc_user');
+    $role = $this->post('role', 'viewer');
+    
+    if ($userId) {
+        $userRoleModel = new UserRoleModel($this->db);
+        $existingUser = $userRoleModel->getUserById($userId);
+        if ($existingUser) {
+            $ncUser = $existingUser['nc_user'];
+        }
+    }
+    
+    $allowedWarehouses = $this->post('allowed_warehouses');
+    $allowedWarehouses = !empty($allowedWarehouses) ? array_filter($allowedWarehouses) : null;
+    
+    $allowedMaterials = $this->post('allowed_materials');
+    $allowedMaterials = !empty($allowedMaterials) ? array_filter($allowedMaterials) : null;
+    
+    $allowedResourceTypes = $this->post('allowed_resource_types');
+    $allowedResourceTypes = !empty($allowedResourceTypes) ? array_filter($allowedResourceTypes) : null;
+    
+    $canEditRates = (bool)$this->post('can_edit_rates');
+    $canExport = (bool)$this->post('can_export');
+    $canImport = (bool)$this->post('can_import');
+    $isLocal = (bool)$this->post('is_local');
+    $email = $this->post('email', '');
+    $newPassword = $this->post('password', '');
+    
+    if (empty($ncUser)) {
+        $this->flash('error', 'Логін користувача обов\'язковий');
+        $this->redirect('adminUsers');
+        return;
+    }
+    
+    $data = [
+        'role' => $role,
+        'allowed_warehouses' => $allowedWarehouses,
+        'allowed_materials' => $allowedMaterials,
+        'allowed_resource_types' => $allowedResourceTypes,
+        'can_edit_rates' => $canEditRates,
+        'can_export' => $canExport,
+        'can_import' => $canImport,
+        'is_local' => $isLocal,
+        'email' => $email,
+    ];
+    
+    if (!empty($newPassword)) {
+        $data['password_hash'] = password_hash($newPassword, PASSWORD_DEFAULT);
+    }
+    
+    $userRoleModel = new UserRoleModel($this->db);
+    $userRoleModel->createOrUpdate($ncUser, $data);
+    
+    $this->flash('success', 'Користувача збережено');
+    $this->redirect('adminUsers');
+}
+
+
+    public function save_old(): void
     {
         $this->checkAccess('save');
         

@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# Якщо файл або каталог існує — не перенаправляти
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Всі запити на index.php
+RewriteRule ^(.*)$ index.php [QSA,L]

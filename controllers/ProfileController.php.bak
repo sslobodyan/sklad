@@ -1,0 +1,48 @@
+<?php
+
+class ProfileController extends Controller
+{
+    use AuthorizeTrait;
+
+    public function changePassword(): void
+    {
+        $this->checkAccess('changePassword');
+        
+        if (!$this->isPost()) {
+            $this->json(['success' => false, 'error' => 'Невірний метод']);
+            return;
+        }
+        
+        $currentPassword = $this->post('current_password', '');
+        $newPassword = $this->post('new_password', '');
+        $confirmPassword = $this->post('confirm_password', '');
+        
+        if (strlen($newPassword) < 6) {
+            $this->json(['success' => false, 'error' => 'Новий пароль повинен містити не менше 6 символів']);
+            return;
+        }
+        
+        if ($newPassword !== $confirmPassword) {
+            $this->json(['success' => false, 'error' => 'Новий пароль і підтвердження не співпадають']);
+            return;
+        }
+        
+        $user = $this->db->query(
+            "SELECT password_hash FROM user_roles WHERE nc_user = ?",
+            [NC_USER]
+        )->fetch();
+        
+        if (!$user || empty($user['password_hash']) || !password_verify($currentPassword, $user['password_hash'])) {
+            $this->json(['success' => false, 'error' => 'Поточний пароль невірний']);
+            return;
+        }
+        
+        $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $this->db->query(
+            "UPDATE user_roles SET password_hash = ? WHERE nc_user = ?",
+            [$newHash, NC_USER]
+        );
+        
+        $this->json(['success' => true, 'message' => 'Пароль успішно змінено']);
+    }
+}
