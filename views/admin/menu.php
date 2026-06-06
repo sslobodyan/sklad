@@ -3,6 +3,14 @@
         <h1 class="page-title">Управління меню</h1>
         <p class="page-subtitle">Редагування назв, груп, порядку та налаштувань пунктів меню</p>
     </div>
+    <div class="header-buttons">
+        <button type="button" class="btn btn-secondary" onclick="syncMenuItems()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 2v6H14M4 12a8 8 0 0 1 14-6l2 2M4 22v-6h6M20 12a8 8 0 0 1-14 6l-2-2"/>
+            </svg>
+            Синхронізувати
+        </button>
+    </div>
 </div>
 
 <!-- Форма додавання групи -->
@@ -150,4 +158,38 @@
             <button type="submit" class="btn btn-primary">Зберегти меню</button>
         </div>
     </form>
+
+<script>
+function syncMenuItems() {
+    if (!confirm('Синхронізувати контролери з файлової системи? Будуть додані нові контролери, яких ще немає в меню.')) {
+        return;
+    }
+    
+    fetch(window.basePath + '/adminMenu/sync', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.added && data.added.length > 0) {
+                alert('Додано контролери: ' + data.added.join(', '));
+            } else {
+                alert('Нових контролерів не знайдено');
+            }
+            location.reload();
+        } else {
+            alert('Помилка: ' + (data.error || 'Невідома помилка'));
+        }
+    })
+    .catch(error => {
+        alert('Помилка при синхронізації: ' + error);
+    });
+}
+</script>
+
+
 </div>

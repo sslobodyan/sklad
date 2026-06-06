@@ -69,42 +69,6 @@ public function save(): void
     $this->redirect('adminMenu');
 }
 
-    public function save_old(): void
-    {
-        $this->checkAccess('save');
-        
-        if (!$this->isPost()) {
-            $this->redirect('adminMenu');
-            return;
-        }
-        
-        $items = $this->post('items', []);
-        $menuModel = new MenuModel($this->db);
-        
-        foreach ($items as $id => $data) {
-            $updateData = [];
-            if (isset($data['label'])) {
-                $updateData['label'] = $data['label'];
-            }
-            if (isset($data['is_enabled'])) {
-                $updateData['is_enabled'] = 1;
-            } else {
-                $updateData['is_enabled'] = 0;
-            }
-            if (isset($data['requires_date_range'])) {
-                $updateData['requires_date_range'] = 1;
-            } else {
-                $updateData['requires_date_range'] = 0;
-            }
-            
-            if (!empty($updateData)) {
-                $menuModel->updateItem((int)$id, $updateData);
-            }
-        }
-        
-        $this->flash('success', 'Меню збережено');
-        $this->redirect('adminMenu');
-    }
 
     public function reorder(): void
     {
@@ -125,24 +89,33 @@ public function save(): void
         }
     }
 
-    public function sync(): void
-    {
-        $this->checkAdmin();
-        $this->checkAccess('sync');
+public function sync(): void
+{
+    $this->checkAccess('sync');
     
-        if (!$this->isPost()) {
-            $this->json(['success' => false, 'error' => 'Невірний метод']);
-            return;
-        }
+    error_log("=== SYNC METHOD CALLED ===");
+    error_log("Request method: " . $_SERVER['REQUEST_METHOD']);
     
-        $menuModel = new MenuModel($this->db);
-        $newControllers = $menuModel->syncFromFiles();
-    
-        $this->json([
-            'success' => true,
-            'added' => $newControllers
-        ]);
+    if (!$this->isPost()) {
+        error_log("Not a POST request");
+        $this->json(['success' => false, 'error' => 'Невірний метод']);
+        return;
     }
+    
+    error_log("POST request confirmed");
+    
+    $menuModel = new MenuModel($this->db);
+    error_log("MenuModel created");
+    
+    $newControllers = $menuModel->syncFromFiles();
+    error_log("syncFromFiles returned: " . print_r($newControllers, true));
+    
+    $response = ['success' => true, 'added' => $newControllers];
+    error_log("Response from sync: " . json_encode($response));
+    
+    $this->json($response);
+}
+
 
 public function addGroup(): void
 {

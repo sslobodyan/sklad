@@ -52,51 +52,61 @@ class MenuModel extends Model
         return $result ?: null;
     }
 
-    public function syncFromFiles(): array
-    {
-        $controllersDir = ROOT_PATH . '/controllers/';
-        $files = glob($controllersDir . '*Controller.php');
+public function syncFromFiles(): array
+{
+    error_log("=== syncFromFiles START ===");
+    
+    $controllersDir = ROOT_PATH . '/controllers/';
+    $files = glob($controllersDir . '*Controller.php');
+    error_log("Files found: " . count($files));
+    
+    $excludePatterns = ['Export', 'Import', 'Helper', 'Report', 'Rates'];
+    $newControllers = [];
+    
+    $existing = $this->db->query(
+        "SELECT controller FROM menu_items WHERE controller IS NOT NULL"
+    )->fetchAll();
+    $existingControllers = array_map('strtolower', array_column($existing, 'controller'));
+    error_log("Existing controllers (lowercase): " . print_r($existingControllers, true));
+    
+    foreach ($files as $file) {
+        $basename = basename($file, 'Controller.php');
+        error_log("Processing: " . $basename);
         
-        $excludePatterns = ['Export', 'Import', 'Helper', 'Report', 'Rates'];
-        $newControllers = [];
-        
-        $existing = $this->db->query(
-            "SELECT controller FROM menu_items WHERE controller IS NOT NULL"
-        )->fetchAll();
-        $existingControllers = array_column($existing, 'controller');
-        
-        foreach ($files as $file) {
-            $basename = basename($file, 'Controller.php');
-            
-            $excluded = false;
-            foreach ($excludePatterns as $pattern) {
-                if (strpos($basename, $pattern) !== false) {
-                    $excluded = true;
-                    break;
-                }
-            }
-            
-            if ($excluded || in_array($basename, ['Model', 'Controller', 'Database'])) {
-                continue;
-            }
-            
-            $controller = strtolower($basename);
-            
-            if (!in_array($controller, $existingControllers)) {
-                $parentId = $this->getDefaultParentId($controller);
-                
-                $this->db->query(
-                    "INSERT INTO menu_items (controller, label, parent_id, sort_order, is_enabled) 
-                     VALUES (?, ?, ?, 999, 1)",
-                    [$controller, $basename, $parentId]
-                );
-                
-                $newControllers[] = $controller;
+        $excluded = false;
+        foreach ($excludePatterns as $pattern) {
+            if (strpos($basename, $pattern) !== false) {
+                $excluded = true;
+                error_log("Excluded by pattern: " . $pattern);
+                break;
             }
         }
         
-        return $newControllers;
+        if ($excluded || in_array($basename, ['Model', 'Controller', 'Database'])) {
+            continue;
+        }
+        
+        $lowerBasename = strtolower($basename);
+        error_log("Checking if exists: " . $basename . " (lowercase: " . $lowerBasename . ")");
+        
+        if (!in_array($lowerBasename, $existingControllers)) {
+            error_log("Inserting new controller: " . $basename);
+            $this->db->query(
+                "INSERT INTO menu_items (controller, label, parent_id, sort_order, is_enabled) 
+                 VALUES (?, ?, NULL, 0, 1)",
+                [$basename, $basename]
+            );
+            $newControllers[] = $basename;
+            error_log("Inserted: " . $basename);
+        } else {
+            error_log("Already exists, skipping");
+        }
     }
+    
+    error_log("=== syncFromFiles END, new controllers: " . print_r($newControllers, true));
+    return $newControllers;
+}
+
 
 public function updateItem(int $id, array $data): bool
 {
