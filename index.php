@@ -24,6 +24,12 @@ session_start();
 define('ROOT_PATH', __DIR__);
 define('BASE_PATH', rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'));
 
+// Перевірка інсталяції
+if (!file_exists(ROOT_PATH . '/config/installed.lock')) {
+    header('Location: ' . BASE_PATH . '/install.php');
+    exit;
+}
+
 // =============================================
 // Авторизація (Nextcloud або локальна)
 // =============================================
