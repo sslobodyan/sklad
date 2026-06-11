@@ -1,8 +1,22 @@
 <?php
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 
 define('ROOT_PATH', __DIR__);
-define('BASE_PATH', rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'));
+$basePath = dirname($_SERVER['SCRIPT_NAME']);
+// Замінюємо зворотні слеші на прямі
+$basePath = str_replace('\\', '/', $basePath);
+// Обрізаємо зайвий слеш в кінці
+$basePath = rtrim($basePath, '/');
+// Якщо залишилось порожньо або '/', робимо порожнім
+if ($basePath === '/' || $basePath === '\\') {
+    $basePath = '';
+}
+define('BASE_PATH', $basePath);
 
 if (!empty($_SESSION['nc_user'])) {
     header('Location: ' . BASE_PATH . '/');

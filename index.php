@@ -6,6 +6,13 @@
  * Працює як standalone або вбудований у Nextcloud (iframe / NC App)
  * Підтримує мульти-базу: різні БД для різних груп Nextcloud
  */
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+error_log("index.php started");
+
 header('X-Frame-Options: ALLOWALL');
 header('Content-Security-Policy: frame-ancestors *');
 
@@ -22,9 +29,19 @@ date_default_timezone_set('Europe/Kyiv');
 
 session_start();
 define('ROOT_PATH', __DIR__);
-define('BASE_PATH', rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'));
 
-// Перевірка інсталяції
+$basePath = dirname($_SERVER['SCRIPT_NAME']);
+// Замінюємо зворотні слеші на прямі
+$basePath = str_replace('\\', '/', $basePath);
+// Обрізаємо зайвий слеш в кінці
+$basePath = rtrim($basePath, '/');
+// Якщо залишилось порожньо або '/', робимо порожнім
+if ($basePath === '/' || $basePath === '\\') {
+    $basePath = '';
+}
+define('BASE_PATH', $basePath);
+
+// Перевірка інсталяції і генерація шаблона бази
 if (!file_exists(ROOT_PATH . '/config/installed.lock')) {
     header('Location: ' . BASE_PATH . '/install.php');
     exit;
@@ -181,13 +198,14 @@ if (empty($baseController)) {
     $baseController = 'dashboard';
 }
 
-$menuItem = $db->query("SELECT id FROM menu_items WHERE controller = ?", [$baseController])->fetch();
-
-if (!$menuItem) {
+// SettingsController завжди публічний для методів dates та preset
+if ($baseController === 'settings' && in_array($action, ['dates', 'preset'])) {
     $skipAccessCheck = true;
 } else {
-    $skipAccessCheck = false;
+    $menuItem = $db->query("SELECT id FROM menu_items WHERE controller = ?", [$baseController])->fetch();
+    $skipAccessCheck = !$menuItem;
 }
+
 
 // =============================================
 // Перевірка доступу
@@ -228,13 +246,3 @@ try {
     to_log('Помилка виконання', ['error' => $e->getMessage(), 'route' => $route]);
 }
 
-function to_log($message, $data = null) {
-    $file = __DIR__ . '/debug.log';
-    $time = date('Y-m-d H:i:s');
-    $output = "[$time] $message  ";
-    if ($data !== null) {
-        $output .= print_r($data, true);
-    }
-    $output .= "\n";
-    file_put_contents($file, $output, FILE_APPEND);
-}
