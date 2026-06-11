@@ -1,76 +1,64 @@
 <?php
-
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 session_start();
 
 define('ROOT_PATH', __DIR__);
+
 $basePath = dirname($_SERVER['SCRIPT_NAME']);
-// Замінюємо зворотні слеші на прямі
 $basePath = str_replace('\\', '/', $basePath);
-// Обрізаємо зайвий слеш в кінці
 $basePath = rtrim($basePath, '/');
-// Якщо залишилось порожньо або '/', робимо порожнім
-if ($basePath === '/' || $basePath === '\\') {
+if ($basePath === '/' || $basePath === '\\' || $basePath === '') {
     $basePath = '';
 }
 define('BASE_PATH', $basePath);
 
+// Якщо вже залогінений - на головну
 if (!empty($_SESSION['nc_user'])) {
     header('Location: ' . BASE_PATH . '/');
     exit;
 }
 
-spl_autoload_register(function ($class) {
-    $dirs = ['core', 'models', 'controllers', 'helpers'];
-    foreach ($dirs as $dir) {
-        $file = ROOT_PATH . '/' . $dir . '/' . $class . '.php';
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
+// Отримуємо список баз
+$databases = [];
+if (file_exists(ROOT_PATH . '/config/databases.php')) {
+    $databases = require ROOT_PATH . '/config/databases.php';
+}
+
+// Функція перевірки чи база встановлена
+function isDatabaseInstalled($group, $config) {
+    $lockFile = ROOT_PATH . '/config/installed_' . $group . '.lock';
+    if (!file_exists($lockFile)) {
+        return false;
     }
-});
-
-require_once ROOT_PATH . '/config/database.php';
-
-$error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
     
-    if (empty($username) || empty($password)) {
-        $error = 'Заповніть всі поля';
-    } else {
-        try {
-            $db = Database::getInstance();
-            
-            // Шукаємо користувача в user_roles
-            $user = $db->query(
-                "SELECT * FROM user_roles WHERE nc_user = ?",
-                [$username]
-            )->fetch();
-            
-            if ($user && !empty($user['password_hash']) && password_verify($password, $user['password_hash'])) {
-                $_SESSION['nc_user'] = $user['nc_user'];
-                $_SESSION['nc_display_name'] = $user['display_name'] ?? $user['nc_user'];
-                $_SESSION['nc_groups'] = []; // локальні не мають груп
-                $_SESSION['nc_db_group'] = 'default';
-                $_SESSION['last_login'] = date('Y-m-d H:i:s');
-                
-                header('Location: ' . BASE_PATH . '/');
-                exit;
-            } else {
-                $error = 'Невірний логін або пароль';
-            }
-        } catch (Exception $e) {
-            $error = 'Помилка підключення до бази даних';
-        }
+    try {
+        $dsn = "mysql:host={$config['host']};dbname={$config['name']};charset=utf8mb4";
+        $pdo = new PDO($dsn, $config['user'], $config['pass']);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->query("SELECT 1 FROM user_roles LIMIT 1");
+        return true;
+    } catch (Exception $e) {
+        return false;
     }
 }
+
+// Розділяємо бази на встановлені та невстановлені
+$installedGroups = [];
+$notInstalledGroups = [];
+
+foreach ($databases as $group => $config) {
+    if (isDatabaseInstalled($group, $config)) {
+        $installedGroups[] = $group;
+    } else {
+        $notInstalledGroups[] = $group;
+    }
+}
+
+$error = '';
+if (isset($_GET['error'])) {
+    $error = urldecode($_GET['error']);
+}
+$installNeeded = isset($_GET['install_needed']);
+$selectedDbGroup = $_GET['db_group'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="uk">
@@ -90,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             justify-content: center;
             padding: 20px;
         }
-        .login-container { max-width: 400px; width: 100%; }
+        .login-container { max-width: 450px; width: 100%; }
         .login-card {
             background: white;
             border-radius: 20px;
@@ -127,14 +115,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             cursor: pointer;
         }
         .btn:hover { background: #0d47a1; }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover { background: #5a6268; }
         .error-message {
             background: #fef2f2;
             color: #c62828;
             padding: 12px;
             border-radius: 10px;
-            font-size: 13px;
             margin-bottom: 20px;
             text-align: center;
+        }
+        .info-message {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 24px 0;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+        }
+        .divider span {
+            padding: 0 10px;
+            color: #999;
+            font-size: 12px;
+        }
+        .install-list {
+            margin-top: 16px;
+        }
+        .install-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .install-item span {
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            width: auto;
+            font-size: 12px;
+        }
+        .form-select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+        }
+        .required-field {
+            color: #c62828;
+            margin-left: 4px;
         }
     </style>
 </head>
@@ -156,17 +205,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="error-message"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
             
-            <form method="post">
+            <?php if ($installNeeded): ?>
+            <div class="info-message">Обрана база даних не встановлена. Будь ласка, встановіть її нижче.</div>
+            <?php endif; ?>
+            
+            <?php if (!empty($installedGroups)): ?>
+            <form method="post" action="<?= BASE_PATH ?>/login_process.php">
                 <div class="form-group">
-                    <label class="form-label">Логін</label>
+                    <label class="form-label">Логін <span class="required-field">*</span></label>
                     <input type="text" name="username" class="form-input" required autofocus>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Пароль</label>
+                    <label class="form-label">Пароль <span class="required-field">*</span></label>
                     <input type="password" name="password" class="form-input" required>
                 </div>
+                
+                <?php if (count($installedGroups) == 1): ?>
+                    <input type="hidden" name="db_group" value="<?= htmlspecialchars($installedGroups[0]) ?>">
+                <?php else: ?>
+                <div class="form-group">
+                    <label class="form-label">База даних <span class="required-field">*</span></label>
+                    <select name="db_group" class="form-select" required>
+                        <option value="">-- Виберіть базу даних --</option>
+                        <?php foreach ($installedGroups as $group): ?>
+                        <option value="<?= htmlspecialchars($group) ?>" <?= ($selectedDbGroup === $group) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($group) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php endif; ?>
+                
                 <button type="submit" class="btn">Увійти</button>
             </form>
+            <?php else: ?>
+            <div class="info-message" style="margin-bottom: 20px;">
+                Немає встановлених баз даних. Будь ласка, встановіть базу нижче.
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($notInstalledGroups)): ?>
+            <div class="divider"><span>АБО</span></div>
+            
+            <div class="install-list">
+                <?php foreach ($notInstalledGroups as $group): ?>
+                <div class="install-item">
+                    <span><?= htmlspecialchars($group) ?></span>
+                    <form method="post" action="<?= BASE_PATH ?>/install_db.php" style="margin: 0;" onsubmit="return confirm('Встановити базу даних \'<?= htmlspecialchars($group) ?>\'? Всі дані в цій базі будуть перезаписані.');">
+                        <input type="hidden" name="db_group" value="<?= htmlspecialchars($group) ?>">
+                        <button type="submit" class="btn-sm btn-secondary">Встановити</button>
+                    </form>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </body>

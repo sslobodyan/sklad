@@ -17,11 +17,7 @@ protected function checkAccess(string $action): void
     $user = PermissionManager::getCurrentUser();
     $controller = $this->getControllerName();
     
-    error_log("=== checkAccess ===");
-    error_log("Action: " . $action);
-    
     if (!$this->getPermManager()->canAccess($user, $controller, $action)) {
-        error_log("Access denied for action: " . $action);
         if (method_exists($this, 'isAjax') && $this->isAjax()) {
             $this->json(['success' => false, 'error' => 'Доступ заборонено']);
         } else {

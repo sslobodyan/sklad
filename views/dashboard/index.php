@@ -2,7 +2,11 @@
 <div class="welcome-card">
     <div class="welcome-text">
         <h1>Вітаємо, <?= htmlspecialchars($displayName ?: ($username ?: 'Гість')) ?>!</h1>
-        <p>Система складського обліку</p>
+        <p>Система складського обліку 
+		<?php if (!empty($_SESSION['nc_db_group'])): ?>
+        <span class="db-name"><?= htmlspecialchars($_SESSION['nc_db_group']) ?></span>
+        <?php endif; ?>
+		</p>
         <?php if ($username): ?>
         <div class="welcome-details">
             <span class="badge badge-secondary">

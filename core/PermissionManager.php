@@ -55,8 +55,6 @@ class PermissionManager
 
     public function canAccess(string $ncUser, string $controller, string $action): bool
     {
-        error_log("canAccess called for controller: " . $controller . ", action: " . $action);
-
         if (empty($ncUser)) {
             return false;
         }

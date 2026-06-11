@@ -21,41 +21,28 @@ class UserMenuPermissionModel extends Model
 
 public function setUserPermissions(string $ncUser, array $permissions): bool
 {
-    error_log("=== UserMenuPermissionModel::setUserPermissions ===");
-    error_log("ncUser: " . $ncUser);
-    error_log("permissions array size: " . count($permissions));
-    
     try {
         $this->db->query("START TRANSACTION");
-        error_log("Transaction started");
         
         // Видаляємо старі права
         $deleteSql = "DELETE FROM user_menu_permissions WHERE nc_user = ?";
-        error_log("Deleting old permissions: " . $deleteSql . " with user=" . $ncUser);
         $this->db->query($deleteSql, [$ncUser]);
-        error_log("Old permissions deleted");
         
         // Вставляємо нові
         $inserted = 0;
         foreach ($permissions as $menuItemId => $accessLevel) {
-            error_log("Processing: menuItemId=$menuItemId, accessLevel=$accessLevel");
             if ($accessLevel !== 'none' && !empty($accessLevel)) {
                 $insertSql = "INSERT INTO user_menu_permissions (nc_user, menu_item_id, access_level) VALUES (?, ?, ?)";
-                error_log("Inserting: $insertSql, values: [$ncUser, $menuItemId, $accessLevel]");
                 $this->db->query($insertSql, [$ncUser, $menuItemId, $accessLevel]);
                 $inserted++;
-                error_log("Inserted successfully");
             } else {
-                error_log("Skipping because accessLevel is none or empty");
             }
         }
         
         $this->db->query("COMMIT");
-        error_log("Transaction committed. Inserted $inserted records");
         return true;
     } catch (Exception $e) {
         $this->db->query("ROLLBACK");
-        error_log("ERROR: " . $e->getMessage());
         return false;
     }
 }

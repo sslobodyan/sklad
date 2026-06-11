@@ -295,3 +295,7 @@
 .logout-btn svg {
     stroke: white;
 }
+
+span.db-name {
+	font-weight: 800;
+}

@@ -93,25 +93,16 @@ public function sync(): void
 {
     $this->checkAccess('sync');
     
-    error_log("=== SYNC METHOD CALLED ===");
-    error_log("Request method: " . $_SERVER['REQUEST_METHOD']);
-    
     if (!$this->isPost()) {
         error_log("Not a POST request");
         $this->json(['success' => false, 'error' => 'Невірний метод']);
         return;
     }
     
-    error_log("POST request confirmed");
-    
     $menuModel = new MenuModel($this->db);
-    error_log("MenuModel created");
-    
     $newControllers = $menuModel->syncFromFiles();
-    error_log("syncFromFiles returned: " . print_r($newControllers, true));
     
     $response = ['success' => true, 'added' => $newControllers];
-    error_log("Response from sync: " . json_encode($response));
     
     $this->json($response);
 }

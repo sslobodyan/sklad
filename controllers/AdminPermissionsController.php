@@ -59,11 +59,7 @@ public function save(): void
 {
     $this->checkAccess('save');
     
-    error_log("=== PERMISSIONS SAVE START ===");
-    error_log("POST data: " . print_r($_POST, true));
-    
     if (!$this->isPost()) {
-        error_log("Not a POST request");
         $this->redirect('adminPermissions');
         return;
     }
@@ -71,29 +67,20 @@ public function save(): void
     $ncUser = $this->post('nc_user');
     $permissions = $this->post('permissions', []);
     
-    error_log("ncUser: " . $ncUser);
-    error_log("permissions count: " . count($permissions));
-    error_log("permissions: " . print_r($permissions, true));
-    
     if (empty($ncUser)) {
-        error_log("Empty ncUser");
         $this->flash('error', 'Користувача не вибрано');
         $this->redirect('adminPermissions');
         return;
     }
     
-    error_log("Calling setUserPermissions...");
     $permissionModel = new UserMenuPermissionModel($this->db);
     $result = $permissionModel->setUserPermissions($ncUser, $permissions);
     
-    error_log("setUserPermissions result: " . ($result ? "TRUE" : "FALSE"));
     
     if ($result) {
         $this->flash('success', 'Права збережено');
-        error_log("Permissions saved successfully");
     } else {
         $this->flash('error', 'Помилка збереження прав');
-        error_log("Permissions save FAILED");
     }
     
     $userRoleModel = new UserRoleModel($this->db);

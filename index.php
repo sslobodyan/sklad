@@ -11,8 +11,6 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-error_log("index.php started");
-
 header('X-Frame-Options: ALLOWALL');
 header('Content-Security-Policy: frame-ancestors *');
 
@@ -31,21 +29,12 @@ session_start();
 define('ROOT_PATH', __DIR__);
 
 $basePath = dirname($_SERVER['SCRIPT_NAME']);
-// Замінюємо зворотні слеші на прямі
 $basePath = str_replace('\\', '/', $basePath);
-// Обрізаємо зайвий слеш в кінці
 $basePath = rtrim($basePath, '/');
-// Якщо залишилось порожньо або '/', робимо порожнім
-if ($basePath === '/' || $basePath === '\\') {
+if ($basePath === '/' || $basePath === '\\' || $basePath === '') {
     $basePath = '';
 }
 define('BASE_PATH', $basePath);
-
-// Перевірка інсталяції і генерація шаблона бази
-if (!file_exists(ROOT_PATH . '/config/installed.lock')) {
-    header('Location: ' . BASE_PATH . '/install.php');
-    exit;
-}
 
 // =============================================
 // Авторизація (Nextcloud або локальна)
@@ -85,8 +74,15 @@ if ($ncUser !== null && $ncSig !== null) {
                 }
             }
             if (!$matched) {
-                $_SESSION['nc_db_group'] = 'default';
+                // Якщо група не знайдена - видаляємо сесію і редирект на логін
+                session_destroy();
+                header('Location: ' . BASE_PATH . '/login.php?error=' . urlencode('Ваша група не має доступу до жодної бази даних'));
+                exit;
             }
+        } else {
+            session_destroy();
+            header('Location: ' . BASE_PATH . '/login.php?error=' . urlencode('Файл конфігурації баз даних не знайдено'));
+            exit;
         }
     }
     
@@ -104,7 +100,15 @@ if ($ncUser !== null && $ncSig !== null) {
 define('NC_USER', $_SESSION['nc_user'] ?? '');
 define('NC_DISPLAY_NAME', $_SESSION['nc_display_name'] ?? '');
 define('NC_GROUPS', $_SESSION['nc_groups'] ?? []);
-define('NC_DB_GROUP', $_SESSION['nc_db_group'] ?? 'default');
+define('NC_DB_GROUP', $_SESSION['nc_db_group'] ?? '');
+
+// Перевірка чи встановлена поточна база
+if (empty(NC_DB_GROUP) || !isDatabaseInstalledByGroup(NC_DB_GROUP)) {
+    error_log("База ".NC_DB_GROUP." не встановлена");
+    session_destroy();
+    header('Location: ' . BASE_PATH . '/login.php?error=' . urlencode('База даних не встановлена або не існує'));
+    exit;
+}
 
 // Автозавантаження класів
 spl_autoload_register(function ($class) {
@@ -121,9 +125,12 @@ spl_autoload_register(function ($class) {
 require_once ROOT_PATH . '/config/database.php';
 
 try {
-    $db = Database::getInstance();
+    $db = Database::getInstance(NC_DB_GROUP);
 } catch (Exception $e) {
-    die('Помилка підключення до бази даних: ' . $e->getMessage());
+    $error = 'Помилка підключення до бази даних: ' . $e->getMessage();
+    session_destroy();
+    header('Location: ' . BASE_PATH . '/login.php?error=' . urlencode($error));
+    exit;
 }
 
 $permManager = PermissionManager::getInstance($db);
@@ -160,7 +167,6 @@ $id = $parts[2] ?? null;
 // Спеціальні маршрути для імпорту/експорту
 // =============================================
 
-// Movements: import, export
 if ($controllerName === 'MovementsController') {
     if ($action === 'import') {
         $controllerName = 'MovementsImportController';
@@ -173,7 +179,6 @@ if ($controllerName === 'MovementsController') {
     }
 }
 
-// Resources: export
 if ($controllerName === 'ResourcesController' && $action === 'export') {
     $controllerName = 'ResourceExportController';
     $action = 'export';
@@ -198,14 +203,12 @@ if (empty($baseController)) {
     $baseController = 'dashboard';
 }
 
-// SettingsController завжди публічний для методів dates та preset
 if ($baseController === 'settings' && in_array($action, ['dates', 'preset'])) {
     $skipAccessCheck = true;
 } else {
     $menuItem = $db->query("SELECT id FROM menu_items WHERE controller = ?", [$baseController])->fetch();
     $skipAccessCheck = !$menuItem;
 }
-
 
 // =============================================
 // Перевірка доступу
@@ -243,6 +246,28 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     echo '<h1>Помилка сервера</h1><p>' . htmlspecialchars($e->getMessage()) . '</p>';
-    to_log('Помилка виконання', ['error' => $e->getMessage(), 'route' => $route]);
+}
+
+function isDatabaseInstalledByGroup($group) {
+    $lockFile = ROOT_PATH . '/config/installed_' . $group . '.lock';
+    if (!file_exists($lockFile)) {
+        return false;
+    }
+    
+    $databases = require ROOT_PATH . '/config/databases.php';
+    if (!isset($databases[$group])) {
+        return false;
+    }
+    
+    $config = $databases[$group];
+    try {
+        $dsn = "mysql:host={$config['host']};dbname={$config['name']};charset=utf8mb4";
+        $pdo = new PDO($dsn, $config['user'], $config['pass']);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->query("SELECT 1 FROM user_roles LIMIT 1");
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
 }
 

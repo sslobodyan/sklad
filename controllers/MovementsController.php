@@ -46,18 +46,8 @@ class MovementsController extends Controller
 
         $sorting = $this->getSorting();
         
-        //$allowedWarehouses = $this->getPermManager()->getAllowedWarehouses(NC_USER);
-        //$movements = $this->model->getAllWithNames($filters, $sorting['orderBy'], $allowedWarehouses);
-
-
-$allowedWarehouses = $this->getPermManager()->getAllowedWarehouses(NC_USER);
-error_log("=== MovementsController::index ===");
-error_log("NC_USER: " . NC_USER);
-error_log("allowedWarehouses: " . print_r($allowedWarehouses, true));
-
-$movements = $this->model->getAllWithNames($filters, $sorting['orderBy'], $allowedWarehouses);
-error_log("Movements count: " . count($movements));
-
+		$allowedWarehouses = $this->getPermManager()->getAllowedWarehouses(NC_USER);
+		$movements = $this->model->getAllWithNames($filters, $sorting['orderBy'], $allowedWarehouses);
 
         $this->render('movements/index', [
             'title' => 'Рух матеріалів',
